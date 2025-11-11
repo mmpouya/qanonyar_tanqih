@@ -74,18 +74,23 @@ document.addEventListener('DOMContentLoaded', () => {
         currentHadithIndex = parseInt(hadithSelector.value);
         if (currentHadithIndex >= 0 && currentHadithIndex < sections.length) {
             const section = sections[currentHadithIndex];
+            // Function to convert \n to <br> for HTML display
+            const formatText = (text) => {
+                if (!text) return '';
+                return text.replace(/\n/g, '<br>');
+            };
             hadithDisplay.innerHTML = `
                 <div class="section-content">
                     <h3>بخش اول</h3>
-                    <p>${section.section_1_content || '(محتوای بخش اول موجود نیست)'}</p>
+                    <p>${formatText(section.section_1_content) || '(محتوای بخش اول موجود نیست)'}</p>
                     <h3>قوانین بخش اول</h3>
-                    <p>${section.section_1_rules || '(قوانین بخش اول موجود نیست)'}</p>
+                    <p>${formatText(section.section_1_rules) || '(قوانین بخش اول موجود نیست)'}</p>
                     <h3>بخش دوم</h3>
-                    <p>${section.section_2_content || '(محتوای بخش دوم موجود نیست)'}</p>
+                    <p>${formatText(section.section_2_content) || '(محتوای بخش دوم موجود نیست)'}</p>
                     <h3>قوانین بخش دوم</h3>
-                    <p>${section.section_2_rules || '(قوانین بخش دوم موجود نیست)'}</p>
+                    <p>${formatText(section.section_2_rules) || '(قوانین بخش دوم موجود نیست)'}</p>
                     <h3>تحلیل رابطه</h3>
-                    <p>${section.reason || section.explanation || '(تحلیل رابطه موجود نیست)'}</p>
+                    <p>${formatText(section.reason || section.explanation) || '(تحلیل رابطه موجود نیست)'}</p>
                 </div>
             `;
             updateHadithCounter();

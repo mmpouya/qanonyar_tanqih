@@ -737,7 +737,8 @@
                 const section1Content = document.createElement('div');
                 section1Content.className = 'collapsible-content';
                 section1Content.style = 'padding:1rem; background:var(--bg-color); border-radius:8px; font-size:1.1rem; line-height:1.8; display:none;';
-                section1Content.textContent = section.section_1_content || '(متن بخش اول موجود نیست)';
+                // Convert \n to <br> for proper line breaks in HTML
+                section1Content.innerHTML = (section.section_1_content || '(متن بخش اول موجود نیست)').replace(/\n/g, '<br>');
                 section1Div.appendChild(section1Header);
                 section1Div.appendChild(section1Content);
                 hadithContainer.appendChild(section1Div);
@@ -751,7 +752,8 @@
                 const section1RulesContent = document.createElement('div');
                 section1RulesContent.className = 'collapsible-content';
                 section1RulesContent.style = 'padding:1rem; background:var(--bg-color); border-radius:8px; font-size:1.2rem; color:var(--primary-color); line-height:1.8; display:none;';
-                section1RulesContent.textContent = section.section_1_rules || '';
+                // Convert \n to <br> for proper line breaks in HTML
+                section1RulesContent.innerHTML = (section.section_1_rules || '').replace(/\n/g, '<br>');
                 section1RulesDiv.appendChild(section1RulesHeader);
                 section1RulesDiv.appendChild(section1RulesContent);
                 hadithContainer.appendChild(section1RulesDiv);
@@ -770,7 +772,8 @@
                 const section2Content = document.createElement('div');
                 section2Content.className = 'collapsible-content';
                 section2Content.style = 'padding:1rem; background:var(--bg-color); border-radius:8px; font-size:1.1rem; line-height:1.8; display:none;';
-                section2Content.textContent = section.section_2_content || '(متن بخش دوم موجود نیست)';
+                // Convert \n to <br> for proper line breaks in HTML
+                section2Content.innerHTML = (section.section_2_content || '(متن بخش دوم موجود نیست)').replace(/\n/g, '<br>');
                 section2Div.appendChild(section2Header);
                 section2Div.appendChild(section2Content);
                 hadithContainer.appendChild(section2Div);
@@ -785,7 +788,8 @@
                 const section2RulesContent = document.createElement('div');
                 section2RulesContent.className = 'collapsible-content';
                 section2RulesContent.style = 'padding:1rem; background:var(--bg-color); border-radius:8px; font-size:1.2rem; color:var(--primary-color); line-height:1.8; display:none;';
-                section2RulesContent.textContent = section.section_2_rules || '';
+                // Convert \n to <br> for proper line breaks in HTML
+                section2RulesContent.innerHTML = (section.section_2_rules || '').replace(/\n/g, '<br>');
                 section2RulesDiv.appendChild(section2RulesHeader);
                 section2RulesDiv.appendChild(section2RulesContent);
                 hadithContainer.appendChild(section2RulesDiv);
@@ -847,7 +851,8 @@
                     relationshipText = '(تحلیل رابطه موجود نیست)';
                 }
                 
-                relationshipContent.textContent = relationshipText;
+                // Convert \n to <br> for proper line breaks in HTML
+                relationshipContent.innerHTML = relationshipText.replace(/\n/g, '<br>');
                 relationshipDiv.appendChild(relationshipHeader);
                 relationshipDiv.appendChild(relationshipContent);
                 hadithContainer.appendChild(relationshipDiv);
