@@ -1413,18 +1413,25 @@
             const currentText = section[field] || '';
             
             // Create input field
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.className = 'edit-input';
-            input.value = currentText;
-            input.style.flex = '1';
-            
-            // Set different widths for different fields
+            let input;
             if (field === 'explanation') {
-                input.style.width = '1000px';  // Longer width for explanation
-                input.style.height = '250px'; 
+                // Use textarea for explanation to handle multi-line text
+                input = document.createElement('textarea');
+                input.className = 'edit-input';
+                input.value = currentText;
+                input.style.flex = '1';
+                input.style.width = '1000px';
+                input.style.height = '250px';
+                input.style.padding = '10px';
+                input.style.fontFamily = 'inherit';
             } else {
-                input.style.width = '1000px';  // Shorter width for relation_type
+                // Use regular input for relation_type
+                input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'edit-input';
+                input.value = currentText;
+                input.style.flex = '1';
+                input.style.width = '1000px';
             }
             
             // Create save button
@@ -1475,9 +1482,13 @@
                 finishEditing(field, currentText);
             });
             
-            // Also save on Enter key
+            // Also save on Enter key (Ctrl+Enter for textarea)
             input.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
+                if (field === 'explanation' && e.key === 'Enter' && e.ctrlKey) {
+                    // For textarea, use Ctrl+Enter to save
+                    saveButton.click();
+                } else if (field !== 'explanation' && e.key === 'Enter') {
+                    // For input, use Enter to save
                     saveButton.click();
                 } else if (e.key === 'Escape') {
                     cancelButton.click();
