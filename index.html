@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحلیل بخش‌های قانونی</title>
+        <!-- 🔹 اضافه کردن manifest.json برای PWA -->
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("service-worker.js")
+                .then(() => console.log("✅ Service Worker ثبت شد و سایت آماده آفلاین است!"))
+                .catch((error) => console.log("❌ خطا در ثبت Service Worker:", error));
+        }
+    </script>
+        
+        <!-- سایر لینک‌ها و استایل‌های سایت -->
+    <link rel="stylesheet" href="styles.css">
+    <!-- vis-network for graph visualization -->
+    <link href="libs/vis-network.min.css" rel="stylesheet" type="text/css" />
+    <!-- ECharts for TTL graph visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.0/echarts.min.js"></script>
+    <script src="https://unpkg.com/n3/browser/n3.min.js"></script>
+</head>
+<body>
+    <!-- Overlay for file upload -->
+    <div id="fileUploadOverlay" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,136,229,0.18);z-index:20000;display:flex;align-items:center;justify-content:center;">
+        <div style="background:#fff;color:#1565c0;border-radius:14px;box-shadow:0 8px 32px rgba(30,136,229,0.18);padding:2.5rem 2.5rem;max-width:420px;width:90vw;text-align:center;">
+            <h2 style="margin-bottom:1rem;">بارگذاری فایل بخش‌های قانونی</h2>
+            <p style="margin-bottom:2rem;">لطفاً ابتدا فایل JSON بخش‌های قانونی را بارگذاری کنید تا بتوانید از امکانات برنامه استفاده کنید.</p>
+            <label class="file-upload-label" style="margin-bottom:0;">
+                <span>📁 انتخاب فایل JSON</span>
+                <input type="file" id="jsonFileOverlay" accept="application/json">
+            </label>
+        </div>
+    </div>
+    <!-- Dark mode toggle (top left, small) -->
+    <button id="darkModeToggle" style="position:fixed;top:1rem;left:1rem;z-index:10001;display:flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;border-radius:50%;font-size:1.2rem;background:var(--primary-color);color:white;border:none;box-shadow:0 2px 6px rgba(30,136,229,0.10);">
+        <span id="darkModeIcon">🌙</span>
+    </button>
+    <div class="container disabled-ui" id="mainContainer">
+        <!-- Step-by-step guide (compact) -->
+        <button id="guideBtn" style="position:absolute; top:18px; right:32px; background:transparent; color:#1565c0; border:none; font-size:1.2rem; cursor:pointer; z-index:10; display:flex; align-items:center; gap:4px;">
+            <span>راهنما</span> <span style="font-size:1.3rem;">ℹ️</span>
+        </button>
+        <!-- Guide Modal -->
+        <div id="guideModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(30,136,229,0.12); z-index:9999; align-items:center; justify-content:center;">
+            <div style="background:#fff; color:#1565c0; border-radius:14px; box-shadow:0 8px 32px rgba(30,136,229,0.18); padding:2rem 2.5rem; max-width:420px; width:90vw; position:relative;">
+                <button id="closeGuideModal" style="position:absolute; top:12px; left:12px; background:transparent; border:none; font-size:1.3rem; color:#1565c0; cursor:pointer;">✖️</button>
+                <strong style="font-size:1.1rem;">راهنمای مراحل:</strong>
+                <ol style="margin:1rem 0 0 0; padding-right:1.2rem; color:#333; font-size:1.02rem;">
+                    <li>ابتدا فایل JSON بخش‌های قانونی را بارگذاری کنید.</li>
+                    <li>بخش مورد نظر را از لیست انتخاب نمایید.</li>
+                    <li>محتوای بخش‌ها را مشاهده کنید.</li>
+                    <li>در پایان، فایل ویرایش‌شده را ذخیره و دانلود نمایید.</li>
+                </ol>
+            </div>
+        </div>
+        <!-- File Upload Section -->
+        <h3 style="color:var(--primary-color); margin-bottom:0.5rem;">۱. بارگذاری فایل بخش‌های قانونی</h3>
+        <div class="file-upload">
+            <label class="file-upload-label">
+                <span>📁 انتخاب فایل JSON</span>
+                <input type="file" id="jsonFile" accept="application/json">
+            </label>
+        </div>
+        <!-- Navigation Buttons (Top) -->
+        <div id="navButtonsTop" class="nav-buttons beautiful-nav" style="justify-content:center; margin-bottom:0.5rem;">
+            <button id="prevHadithBtn" class="button-nav beautiful-nav-btn">
+                <span class="nav-icon">&#8592;</span>
+                <span>قبلی</span>
+            </button>
+            <button id="nextHadithBtn" class="button-nav beautiful-nav-btn">
+                <span>بعدی</span>
+                <span class="nav-icon">&#8594;</span>
+            </button>
+        </div>
+        <!-- Hadith Selector Section -->
+        <div id="hadithSelectorContainer" style="display:none; margin-bottom:1rem;align-items:center;gap:1rem;">
+            <h3 style="color:var(--primary-color); margin-bottom:0.5rem;">۲. انتخاب بخش</h3>
+            <label for="hadithSelector">انتخاب بخش:</label>
+            <select id="hadithSelector"></select>
+            <span id="hadithCounter" class="hadith-counter" style="margin-right:1rem;"></span>
+        </div>
+        <!-- Filter Section -->
+        <div id="filterSection" style="display:none; margin-bottom:1rem; padding:1rem; background:var(--bg-color); border-radius:8px;">
+            <h3 style="color:var(--primary-color); margin-bottom:0.5rem;">فیلترها</h3>
+            <div style="display:flex; flex-wrap:wrap; gap:1rem; margin-bottom:0.5rem;">
+                <!-- Has Relationship Filter -->
+                <div>
+                    <label style="display:block; margin-bottom:0.3rem;">دارای رابطه:</label>
+                    <div style="display:flex; gap:0.5rem;">
+                        <label style="display:flex; align-items:center; gap:0.3rem;">
+                            <input type="checkbox" id="filterHasRelationYes" value="true"> بله
+                        </label>
+                        <label style="display:flex; align-items:center; gap:0.3rem;">
+                            <input type="checkbox" id="filterHasRelationNo" value="false"> خیر
+                        </label>
+                        <!-- <label style="display:flex; align-items:center; gap:0.3rem;">
+                            <input type="checkbox" id="filterHasRelationUnknown" value="unknown"> نامشخص
+                        </label> -->
+                    </div>
+                </div>
+                <!-- Qanon Filter -->
+                <div>
+                    <label style="display:block; margin-bottom:0.3rem;">نام قانون:</label>
+                    <select id="filterQanon" multiple style="min-width:200px; min-height:80px; padding:0.3rem;">
+                        <option value="">همه</option>
+                    </select>
+                </div>
+                <!-- Relation Type Filter -->
+                <div>
+                    <label style="display:block; margin-bottom:0.3rem;">نوع رابطه:</label>
+                    <select id="filterRelationType" multiple style="min-width:200px; min-height:80px; padding:0.3rem;">
+                        <option value="">همه</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex; gap:0.5rem;">
+                <button id="applyFiltersBtn" class="button button-primary" style="min-width:100px;">اعمال فیلتر</button>
+                <button id="clearFiltersBtn" class="button button-secondary" style="min-width:100px;">حذف فیلترها</button>
+            </div>
+        </div>
+        <!-- Filter Button (replaces filter section after filtering) -->
+        <div id="filterButtonSection" style="display:none; margin-bottom:1rem; padding:1rem; background:var(--bg-color); border-radius:8px; text-align:center;">
+            <button id="changeFiltersBtn" class="button button-primary" style="min-width:200px;">تغییر فیلترها</button>
+        </div>
+        <!-- Filter Modal -->
+        <div id="filterModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(30,136,229,0.12); z-index:9999; align-items:center; justify-content:center;">
+            <div style="background:#fff; color:#1565c0; border-radius:14px; box-shadow:0 8px 32px rgba(30,136,229,0.18); padding:2rem 2.5rem; max-width:600px; width:90vw; position:relative;">
+                <h3 style="color:var(--primary-color); margin-bottom:1rem;">انتخاب فیلترها</h3>
+                <div style="display:flex; flex-wrap:wrap; gap:1rem; margin-bottom:1rem;">
+                    <!-- Has Relationship Filter -->
+                    <div style="flex:1; min-width:200px;">
+                        <label style="display:block; margin-bottom:0.3rem;">دارای رابطه:</label>
+                        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                            <label style="display:flex; align-items:center; gap:0.3rem;">
+                                <input type="checkbox" id="filterModalHasRelationYes" value="true"> بله
+                            </label>
+                            <label style="display:flex; align-items:center; gap:0.3rem;">
+                                <input type="checkbox" id="filterModalHasRelationNo" value="false"> خیر
+                            </label>
+                            <!-- <label style="display:flex; align-items:center; gap:0.3rem;">
+                                <input type="checkbox" id="filterModalHasRelationUnknown" value="unknown"> نامشخص
+                            </label> -->
+                        </div>
+                    </div>
+                    <!-- Qanon Filter -->
+                    <div style="flex:1; min-width:200px;">
+                        <label style="display:block; margin-bottom:0.3rem;">نام قانون:</label>
+                        <select id="filterModalQanon" multiple style="width:100%; min-height:100px; padding:0.3rem;">
+                        </select>
+                    </div>
+                    <!-- Relation Type Filter -->
+                    <div style="flex:1; min-width:200px;">
+                        <label style="display:block; margin-bottom:0.3rem;">نوع رابطه:</label>
+                        <select id="filterModalRelationType" multiple style="width:100%; min-height:100px; padding:0.3rem;">
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:center; gap:1rem; margin-top:1rem;">
+                    <button id="applyModalFiltersBtn" class="button button-primary" style="min-width:120px;">اعمال فیلتر</button>
+                    <button id="skipFiltersBtn" class="button button-secondary" style="min-width:120px;">مشاهده همه</button>
+                </div>
+            </div>
+        </div>
+        <!-- Progress bar -->
+        <div id="progressBarContainer" style="width:100%;height:8px;background:#e3f2fd;border-radius:4px;margin-bottom:1rem;display:none;">
+            <div id="progressBar" style="height:100%;background:#1e88e5;width:0%;border-radius:4px;transition:width 0.3s;"></div>
+        </div>
+        <!-- Hadith Display Section -->
+        <h3 style="color:var(--primary-color); margin-bottom:0.5rem;">۳. نمایش و ویرایش</h3>
+        <div id="hadithDisplay">
+            <!-- Content will be dynamically inserted here -->
+        </div>
+        <!-- Floating Back to Top Button -->
+        <button id="backToTopBtn" title="بازگشت به بالا" style="display:none; position:fixed; bottom:32px; left:32px; z-index:1000; background:#1e88e5; color:white; border:none; border-radius:50%; width:48px; height:48px; font-size:2rem; box-shadow:0 2px 8px rgba(0,0,0,0.2); cursor:pointer; transition:background 0.2s;">↑</button>
+        <!-- Relation Type and Explanation Section -->
+        <h3 style="color:var(--primary-color); margin-bottom:0.5rem; display:flex; align-items:center; gap:8px;">
+            ۴. نوع رابطه و توضیح
+            <span title="نوع رابطه بین دو بخش قانونی و توضیح آن" style="cursor:help; font-size:1.2rem; color:#00acc1;">ℹ️</span>
+        </h3>
+        <div class="relation-info">
+            <div id="relationTypeDisplay" style="margin-bottom: 0.5rem; padding: 0.5rem; background: var(--bg-color); border-radius: 8px;"></div>
+            <div id="relationExplanationDisplay" style="margin-bottom: 0.5rem; padding: 0.5rem; background: var(--bg-color); border-radius: 8px;"></div>
+        </div>
+        <!-- Removed save and download button as per requirements -->
+        <!-- Navigation Buttons (Bottom) -->
+        <div id="navButtonsBottom" class="nav-buttons beautiful-nav" style="justify-content:center; margin-top:0.5rem;">
+            <button id="backBtnBottom" class="button button-secondary beautiful-nav-btn" style="min-width:100px;" onclick="navigateHadith(-1)">
+                <span class="nav-icon">&#8592;</span>
+                <span>قبلی</span>
+            </button>
+            <button id="nextBtnBottom" class="button button-secondary beautiful-nav-btn" style="min-width:100px;" onclick="navigateHadith(1)">
+                <span>بعدی</span>
+                <span class="nav-icon">&#8594;</span>
+            </button>
+        </div>
+    </div>
+    <!-- Notification area for TTL graph -->
+    <div id="notificationArea" style="position:fixed;top:30px;right:30px;z-index:9999;"></div>
+    <script src="libs/vis-network.min.js"></script>
+    <script>
+        let sections = [];
+        let selectedHadithIndex = 0;
+        let uploadedFileName = "";
+        let ttlCharts = new Map(); // Store charts for each hadith
+        // Filter variables
+        let filteredSections = [];
+        let currentFilters = {
+            hasRelationship: [],
+            qanon: [],
+            relationType: []
+        };
+        function showToast(title, message, type = 'success') {
+            let toastContainer = document.getElementById('toastContainer');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toastContainer';
+                toastContainer.className = 'toast-container';
+                document.body.appendChild(toastContainer);
+            }
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icons = { success: '✅', error: '❌', warning: '⚠️' };
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type]}</span>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+            `;
+            toastContainer.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+        // Overlay logic and UI enable/disable
+        let fileLoaded = false;
+        function setUIEnabled(enabled) {
+            const container = document.getElementById('mainContainer');
+            if (enabled) {
+                container.classList.remove('disabled-ui');
+                Array.from(container.querySelectorAll('input, select, button')).forEach(el => {
+                    if (!el.classList.contains('file-upload-label')) el.disabled = false;
+                });
+            } else {
+                container.classList.add('disabled-ui');
+                Array.from(container.querySelectorAll('input, select, button')).forEach(el => {
+                    if (!el.classList.contains('file-upload-label')) el.disabled = true;
+                });
+            }
+        }
+        document.getElementById('jsonFile').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            uploadedFileName = file.name;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const raw = JSON.parse(e.target.result);
+                    if (!Array.isArray(raw) || raw.length === 0) {
+                        showToast('خطا', 'ساختار فایل JSON باید آرایه‌ای از بخش‌های قانونی باشد.', 'error');
+                        return;
+                    }
+                    sections = raw;
+                    filteredSections = [...raw]; // Initialize filtered sections with all data
+                    selectedHadithIndex = 0;
+                    document.getElementById('fileUploadOverlay').style.display = 'none';
+                    setUIEnabled(true);
+                    fileLoaded = true;
+                    populateHadithSelector();
+                    populateFilterOptions(); // Populate filter options
+                    populateModalFilterOptions(); // Populate modal filter options
+                    document.getElementById('hadithSelectorContainer').style.display = 'flex';
+                    document.getElementById('filterSection').style.display = 'block'; // Show filter section
+                    document.getElementById('progressBarContainer').style.display = 'block';
+                    // Show filter modal instead of directly showing data
+                    document.getElementById('filterModal').style.display = 'flex';
+                    // Hide main content until filters are applied
+                    document.getElementById('hadithDisplay').style.display = 'none';
+                    document.getElementById('relationTypeDisplay').style.display = 'none';
+                    document.getElementById('relationExplanationDisplay').style.display = 'none';
+                    document.getElementById('navButtonsTop').style.display = 'none';
+                    document.getElementById('navButtonsBottom').style.display = 'none';
+                    updateNavButtons();
+                } catch (error) {
+                    showToast('خطا', 'خطا در پردازش فایل JSON. لطفاً یک فایل معتبر انتخاب کنید.', 'error');
+                    return;
+                }
+            };
+            reader.readAsText(file);
+        });
+        
+        // Overlay file input
+        document.getElementById('jsonFileOverlay').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            uploadedFileName = file.name;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const raw = JSON.parse(e.target.result);
+                    if (!Array.isArray(raw) || raw.length === 0) {
+                        showToast('خطا', 'ساختار فایل JSON باید آرایه‌ای از بخش‌های قانونی باشد.', 'error');
+                        return;
+                    }
+                    sections = raw;
+                    filteredSections = [...raw]; // Initialize filtered sections with all data
+                    selectedHadithIndex = 0;
+                    document.getElementById('fileUploadOverlay').style.display = 'none';
+                    setUIEnabled(true);
+                    fileLoaded = true;
+                    populateHadithSelector();
+                    populateFilterOptions(); // Populate filter options
+                    populateModalFilterOptions(); // Populate modal filter options
+                    document.getElementById('hadithSelectorContainer').style.display = 'flex';
+                    document.getElementById('filterSection').style.display = 'block'; // Show filter section
+                    document.getElementById('progressBarContainer').style.display = 'block';
+                    // Show filter modal instead of directly showing data
+                    document.getElementById('filterModal').style.display = 'flex';
+                    // Hide main content until filters are applied
+                    document.getElementById('hadithDisplay').style.display = 'none';
+                    document.getElementById('relationTypeDisplay').style.display = 'none';
+                    document.getElementById('relationExplanationDisplay').style.display = 'none';
+                    document.getElementById('navButtonsTop').style.display = 'none';
+                    document.getElementById('navButtonsBottom').style.display = 'none';
+                    updateNavButtons();
+                } catch (error) {
+                    showToast('خطا', 'خطا در پردازش فایل JSON. لطفاً یک فایل معتبر انتخاب کنید.', 'error');
+                    return;
+                }
+            };
+            reader.readAsText(file);
+        });
+        // Filter functions
+        function populateFilterOptions() {
+            // Populate Qanon filter options
+            const qanonSet = new Set();
+            sections.forEach(section => {
+                if (section.section_1_qanon) qanonSet.add(section.section_1_qanon);
+                if (section.section_2_qanon) qanonSet.add(section.section_2_qanon);
+            });
+            
+            const qanonFilter = document.getElementById('filterQanon');
+            // Clear existing options except the first one
+            while (qanonFilter.options.length > 1) {
+                qanonFilter.remove(1);
+            }
+            // Add new options
+            Array.from(qanonSet).sort().forEach(qanon => {
+                const option = document.createElement('option');
+                option.value = qanon;
+                option.textContent = qanon;
+                qanonFilter.appendChild(option);
+            });
+            
+            // Populate Relation Type filter options
+            const relationTypeSet = new Set();
+            sections.forEach(section => {
+                if (section.relation_type) relationTypeSet.add(section.relation_type);
+            });
+            
+            const relationTypeFilter = document.getElementById('filterRelationType');
+            // Clear existing options except the first one
+            while (relationTypeFilter.options.length > 1) {
+                relationTypeFilter.remove(1);
+            }
+            // Add new options
+            Array.from(relationTypeSet).sort().forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                relationTypeFilter.appendChild(option);
+            });
+        }
+        
+        function populateModalFilterOptions() {
+            // Populate Qanon filter options
+            const qanonSet = new Set();
+            sections.forEach(section => {
+                if (section.section_1_qanon) qanonSet.add(section.section_1_qanon);
+                if (section.section_2_qanon) qanonSet.add(section.section_2_qanon);
+            });
+            
+            const qanonFilter = document.getElementById('filterModalQanon');
+            // Clear existing options
+            while (qanonFilter.options.length > 0) {
+                qanonFilter.remove(0);
+            }
+            // Add new options
+            Array.from(qanonSet).sort().forEach(qanon => {
+                const option = document.createElement('option');
+                option.value = qanon;
+                option.textContent = qanon;
+                qanonFilter.appendChild(option);
+            });
+            
+            // Populate Relation Type filter options
+            const relationTypeSet = new Set();
+            sections.forEach(section => {
+                if (section.relation_type) relationTypeSet.add(section.relation_type);
+            });
+            
+            const relationTypeFilter = document.getElementById('filterModalRelationType');
+            // Clear existing options
+            while (relationTypeFilter.options.length > 0) {
+                relationTypeFilter.remove(0);
+            }
+            // Add new options
+            Array.from(relationTypeSet).sort().forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                relationTypeFilter.appendChild(option);
+            });
+        }
+        
+        function applyFilters() {
+            // Get selected filter values
+            const hasRelationYes = document.getElementById('filterHasRelationYes').checked;
+            const hasRelationNo = document.getElementById('filterHasRelationNo').checked;
+            // const hasRelationUnknown = document.getElementById('filterHasRelationUnknown').checked;
+            
+            const selectedQanons = Array.from(document.getElementById('filterQanon').selectedOptions)
+                .map(option => option.value)
+                .filter(value => value !== '');
+                
+            const selectedRelationTypes = Array.from(document.getElementById('filterRelationType').selectedOptions)
+                .map(option => option.value)
+                .filter(value => value !== '');
+            
+            // Apply filters
+            filteredSections = sections.filter(section => {
+                // Has relationship filter
+                if (hasRelationYes || hasRelationNo) { // Removed hasRelationUnknown
+                    const hasRelationValue = section.has_relationship;
+                    let matches = false;
+                    
+                    if (hasRelationYes && hasRelationValue === true) matches = true;
+                    if (hasRelationNo && hasRelationValue === false) matches = true;
+                    // Removed check for hasRelationUnknown
+                    
+                    if (!matches) return false;
+                }
+                
+                // Qanon filter
+                if (selectedQanons.length > 0) {
+                    const section1Qanon = section.section_1_qanon || '';
+                    const section2Qanon = section.section_2_qanon || '';
+                    let matches = false;
+                    
+                    selectedQanons.forEach(qanon => {
+                        if (section1Qanon.includes(qanon) || section2Qanon.includes(qanon)) {
+                            matches = true;
+                        }
+                    });
+                    
+                    if (!matches) return false;
+                }
+                
+                // Relation type filter
+                if (selectedRelationTypes.length > 0) {
+                    const relationType = section.relation_type || '';
+                    let matches = false;
+                    
+                    selectedRelationTypes.forEach(type => {
+                        if (relationType.includes(type)) {
+                            matches = true;
+                        }
+                    });
+                    
+                    if (!matches) return false;
+                }
+                
+                return true;
+            });
+            
+            // Update UI
+            selectedHadithIndex = 0;
+            populateHadithSelector();
+            displayHadith();
+            updateNavButtons();
+            
+            showToast('موفقیت', 'فیلترها با موفقیت اعمال شدند.', 'success');
+        }
+        
+        function clearFilters() {
+            // Reset filter checkboxes
+            document.getElementById('filterHasRelationYes').checked = false;
+            document.getElementById('filterHasRelationNo').checked = false;
+            // document.getElementById('filterHasRelationUnknown').checked = false;
+            
+            // Reset filter selects
+            document.getElementById('filterQanon').selectedIndex = -1;
+            document.getElementById('filterRelationType').selectedIndex = -1;
+            
+            // Reset filtered sections to all data
+            filteredSections = [...sections];
+            
+            // Update UI
+            selectedHadithIndex = 0;
+            populateHadithSelector();
+            displayHadith();
+            updateNavButtons();
+            
+            showToast('موفقیت', 'فیلترها حذف شدند.', 'success');
+        }
+        
+        // Modal filter functions
+        function applyModalFilters() {
+            // Get selected filter values from modal
+            const hasRelationYes = document.getElementById('filterModalHasRelationYes').checked;
+            const hasRelationNo = document.getElementById('filterModalHasRelationNo').checked;
+            // const hasRelationUnknown = document.getElementById('filterModalHasRelationUnknown').checked;
+            
+            const selectedQanons = Array.from(document.getElementById('filterModalQanon').selectedOptions)
+                .map(option => option.value);
+                
+            const selectedRelationTypes = Array.from(document.getElementById('filterModalRelationType').selectedOptions)
+                .map(option => option.value);
+            
+            // Apply filters
+            filteredSections = sections.filter(section => {
+                // Has relationship filter
+                if (hasRelationYes || hasRelationNo) { // Removed hasRelationUnknown
+                    const hasRelationValue = section.has_relationship;
+                    let matches = false;
+                    
+                    if (hasRelationYes && hasRelationValue === true) matches = true;
+                    if (hasRelationNo && hasRelationValue === false) matches = true;
+                    // Removed check for hasRelationUnknown
+                    
+                    if (!matches) return false;
+                }
+                
+                // Qanon filter
+                if (selectedQanons.length > 0) {
+                    const section1Qanon = section.section_1_qanon || '';
+                    const section2Qanon = section.section_2_qanon || '';
+                    let matches = false;
+                    
+                    selectedQanons.forEach(qanon => {
+                        if (section1Qanon.includes(qanon) || section2Qanon.includes(qanon)) {
+                            matches = true;
+                        }
+                    });
+                    
+                    if (!matches) return false;
+                }
+                
+                // Relation type filter
+                if (selectedRelationTypes.length > 0) {
+                    const relationType = section.relation_type || '';
+                    let matches = false;
+                    
+                    selectedRelationTypes.forEach(type => {
+                        if (relationType.includes(type)) {
+                            matches = true;
+                        }
+                    });
+                    
+                    if (!matches) return false;
+                }
+                
+                return true;
+            });
+            
+            // Update regular filter controls to match modal selections
+            document.getElementById('filterHasRelationYes').checked = hasRelationYes;
+            document.getElementById('filterHasRelationNo').checked = hasRelationNo;
+            // document.getElementById('filterHasRelationUnknown').checked = hasRelationUnknown;
+            
+            // Update Qanon filter selection
+            const qanonSelect = document.getElementById('filterQanon');
+            Array.from(qanonSelect.options).forEach(option => {
+                option.selected = selectedQanons.includes(option.value);
+            });
+            
+            // Update Relation Type filter selection
+            const relationTypeSelect = document.getElementById('filterRelationType');
+            Array.from(relationTypeSelect.options).forEach(option => {
+                option.selected = selectedRelationTypes.includes(option.value);
+            });
+            
+            // Hide modal and show data
+            document.getElementById('filterModal').style.display = 'none';
+            document.getElementById('hadithDisplay').style.display = 'block';
+            document.getElementById('relationTypeDisplay').style.display = 'block';
+            document.getElementById('relationExplanationDisplay').style.display = 'block';
+            document.getElementById('navButtonsTop').style.display = 'flex';
+            document.getElementById('navButtonsBottom').style.display = 'flex';
+            
+            // Hide filter section and show filter button
+            document.getElementById('filterSection').style.display = 'none';
+            document.getElementById('filterButtonSection').style.display = 'block';
+            
+            // Update UI
+            selectedHadithIndex = 0;
+            populateHadithSelector();
+            displayHadith();
+            updateNavButtons();
+            
+            showToast('موفقیت', 'فیلترها با موفقیت اعمال شدند.', 'success');
+        }
+        
+        function skipFilters() {
+            // Hide modal and show all data
+            document.getElementById('filterModal').style.display = 'none';
+            document.getElementById('hadithDisplay').style.display = 'block';
+            document.getElementById('relationTypeDisplay').style.display = 'block';
+            document.getElementById('relationExplanationDisplay').style.display = 'block';
+            document.getElementById('navButtonsTop').style.display = 'flex';
+            document.getElementById('navButtonsBottom').style.display = 'flex';
+            
+            // Hide filter section and show filter button
+            document.getElementById('filterSection').style.display = 'none';
+            document.getElementById('filterButtonSection').style.display = 'block';
+            
+            // Reset filtered sections to all data
+            filteredSections = [...sections];
+            
+            // Reset regular filter controls
+            document.getElementById('filterHasRelationYes').checked = false;
+            document.getElementById('filterHasRelationNo').checked = false;
+            // document.getElementById('filterHasRelationUnknown').checked = false;
+            document.getElementById('filterQanon').selectedIndex = -1;
+            document.getElementById('filterRelationType').selectedIndex = -1;
+            
+            // Update UI
+            selectedHadithIndex = 0;
+            populateHadithSelector();
+            displayHadith();
+            updateNavButtons();
+        }
+        
+        function navigateHadith(direction) {
+            if (!sections.length) return;
+            let newIndex = selectedHadithIndex + direction;
+            if (newIndex < 0) newIndex = 0;
+            if (newIndex >= sections.length) newIndex = sections.length - 1;
+            if (newIndex !== selectedHadithIndex) {
+                selectedHadithIndex = newIndex;
+                populateHadithSelector();
+                displayHadith();
+            }
+            updateNavButtons();
+        }
+        function updateNavButtons() {
+            const backBtnTop = document.getElementById('prevHadithBtn');
+            const nextBtnTop = document.getElementById('nextHadithBtn');
+            const backBtnBottom = document.getElementById('backBtnBottom');
+            const nextBtnBottom = document.getElementById('nextBtnBottom');
+            if (!sections.length) {
+                [backBtnTop, nextBtnTop, backBtnBottom, nextBtnBottom].forEach(btn => { if (btn) btn.disabled = true; });
+                return;
+            }
+            const atStart = selectedHadithIndex === 0;
+            const atEnd = selectedHadithIndex === sections.length - 1;
+            if (backBtnTop) backBtnTop.disabled = atStart;
+            if (nextBtnTop) nextBtnTop.disabled = atEnd;
+            if (backBtnBottom) backBtnBottom.disabled = atStart;
+            if (nextBtnBottom) nextBtnBottom.disabled = atEnd;
+        }
+        // Modify populateHadithSelector to use filteredSections
+        function populateHadithSelector() {
+            const selector = document.getElementById('hadithSelector');
+            selector.innerHTML = '';
+            filteredSections.forEach((section, i) => {
+                const option = document.createElement('option');
+                option.value = i;
+                // For new format, use section IDs
+                const section1Id = section.section_1_id || `بخش ۱`;
+                const section2Id = section.section_2_id || `بخش ۲`;
+                const hasRelation = section.has_relationship === true ? ' (دارای رابطه)' : 
+                                  section.has_relationship === false ? '' : 
+                                  ' (رابطه نامشخص)';
+                option.textContent = `مقایسه ${section1Id} و ${section2Id}${hasRelation}`;
+                selector.appendChild(option);
+            });
+            selector.value = selectedHadithIndex;
+            selector.onchange = function() {
+                selectedHadithIndex = parseInt(this.value, 10);
+                displayHadith();
+                populatePropDropdowns();
+                updateNavButtons();
+            };
+            updateNavButtons();
+        }
+        // Modify getCurrentHadith to use filteredSections
+        function getCurrentHadith() {
+            return filteredSections[selectedHadithIndex] || null;
+        }
+        function populatePropDropdowns() {
+            // No propositions in the new structure, so clear dropdowns
+            const sourceSelect = document.getElementById('newGraphSource');
+            const targetSelect = document.getElementById('newGraphTarget');
+            if (!sourceSelect || !targetSelect) return;
+            sourceSelect.innerHTML = '';
+            targetSelect.innerHTML = '';
+        }
+        function displayHadith() {
+            try {
+                // Clean up previous TTL charts
+                cleanupTTLCharts();
+                
+                const section = getCurrentHadith();
+                console.log('Displaying section at index', selectedHadithIndex, ':', section);
+                const hadithContainer = document.getElementById('hadithDisplay');
+                hadithContainer.innerHTML = '';
+                if (!section) {
+                    hadithContainer.innerHTML = '<div style="color:#f44336;">هیچ بخشی برای نمایش وجود ندارد.</div>';
+                    return;
+                }
+                // Collapsible Section 1 Content
+                const section1Div = document.createElement('div');
+                section1Div.style.marginBottom = '0.5rem';
+                const section1Header = document.createElement('button');
+                section1Header.className = 'collapsible-header';
+                section1Header.style = 'width:100%; text-align:right; background:#e3f2fd; color:#1565c0; border:none; border-radius:8px; padding:0.7rem 1rem; font-size:1.1rem; margin-bottom:0.2rem; cursor:pointer; display:flex; align-items:center; gap:8px;';
+                const section1Qanon = section.section_1_qanon || '';
+                const section1HeaderContent = section1Qanon ? 
+                    `<span>متن بخش اول (${section1Qanon})</span><span class="arrow">▲</span>` : 
+                    '<span>متن بخش اول</span><span class="arrow">▲</span>';
+                section1Header.innerHTML = section1HeaderContent;
+                const section1Content = document.createElement('div');
+                section1Content.className = 'collapsible-content';
+                section1Content.style = 'padding:1rem; background:var(--bg-color); border-radius:8px; font-size:1.1rem; line-height:1.8; display:none;';
+                section1Content.textContent = section.section_1_content || '(متن بخش اول موجود نیست)';
+                section1Div.appendChild(section1Header);
+                section1Div.appendChild(section1Content);
+                hadithContainer.appendChild(section1Div);
+                // Collapsible Section 1 Rules
+                const section1RulesDiv = document.createElement('div');
+                section1RulesDiv.style.marginBottom = '0.5rem';
+                const section1RulesHeader = document.createElement('button');
+                section1RulesHeader.className = 'collapsible-header';
+                section1RulesHeader.style = 'width:100%; text-align:right; background:#e3f2fd; color:#1e88e5; border:none; border-radius:8px; padding:0.7rem 1rem; font-size:1.1rem; margin-bottom:0.2rem; cursor:pointer; display:flex; align-items:center; gap:8px;';
+                section1RulesHeader.innerHTML = '<span>احکام بخش اول</span><span class="arrow">▲</span>';
+                const section1RulesContent = document.createElement('div');
+                section1RulesContent.className = 'collapsible-content';
+                section1RulesContent.style = 'padding:1rem; background:var(--bg-color); border-radius:8px; font-size:1.2rem; color:var(--primary-color); line-height:1.8; display:none;';
+                section1RulesContent.textContent = section.section_1_rules || '';
+                section1RulesDiv.appendChild(section1RulesHeader);
+                section1RulesDiv.appendChild(section1RulesContent);
+                hadithContainer.appendChild(section1RulesDiv);
+                
+                // Collapsible Section 2 Content
+                const section2Div = document.createElement('div');
+                section2Div.style.marginBottom = '0.5rem';
+                const section2Header = document.createElement('button');
+                section2Header.className = 'collapsible-header';
+                section2Header.style = 'width:100%; text-align:right; background:#e3f2fd; color:#1565c0; border:none; border-radius:8px; padding:0.7rem 1rem; font-size:1.1rem; margin-bottom:0.2rem; cursor:pointer; display:flex; align-items:center; gap:8px;';
+                const section2Qanon = section.section_2_qanon || '';
+                const section2HeaderContent = section2Qanon ? 
+                    `<span>متن بخش دوم (${section2Qanon})</span><span class="arrow">▲</span>` : 
+                    '<span>متن بخش دوم</span><span class="arrow">▲</span>';
+                section2Header.innerHTML = section2HeaderContent;
+                const section2Content = document.createElement('div');
+                section2Content.className = 'collapsible-content';
+                section2Content.style = 'padding:1rem; background:var(--bg-color); border-radius:8px; font-size:1.1rem; line-height:1.8; display:none;';
+                section2Content.textContent = section.section_2_content || '(متن بخش دوم موجود نیست)';
+                section2Div.appendChild(section2Header);
+                section2Div.appendChild(section2Content);
+                hadithContainer.appendChild(section2Div);
+                
+                // Collapsible Section 2 Rules
+                const section2RulesDiv = document.createElement('div');
+                section2RulesDiv.style.marginBottom = '0.5rem';
+                const section2RulesHeader = document.createElement('button');
+                section2RulesHeader.className = 'collapsible-header';
+                section2RulesHeader.style = 'width:100%; text-align:right; background:#e3f2fd; color:#1e88e5; border:none; border-radius:8px; padding:0.7rem 1rem; font-size:1.1rem; margin-bottom:0.2rem; cursor:pointer; display:flex; align-items:center; gap:8px;';
+                section2RulesHeader.innerHTML = '<span>احکام بخش دوم</span><span class="arrow">▲</span>';
+                const section2RulesContent = document.createElement('div');
+                section2RulesContent.className = 'collapsible-content';
+                section2RulesContent.style = 'padding:1rem; background:var(--bg-color); border-radius:8px; font-size:1.2rem; color:var(--primary-color); line-height:1.8; display:none;';
+                section2RulesContent.textContent = section.section_2_rules || '';
+                section2RulesDiv.appendChild(section2RulesHeader);
+                section2RulesDiv.appendChild(section2RulesContent);
+                hadithContainer.appendChild(section2RulesDiv);
+                
+                // Display has_relationship value prominently
+                const hasRelationshipDiv = document.createElement('div');
+                hasRelationshipDiv.style.marginBottom = '0.5rem';
+                hasRelationshipDiv.style.padding = '1rem';
+                hasRelationshipDiv.style.borderRadius = '8px';
+                hasRelationshipDiv.style.fontSize = '1.1rem';
+                hasRelationshipDiv.style.fontWeight = 'bold';
+                hasRelationshipDiv.style.textAlign = 'center';
+                
+                if (section.has_relationship === true) {
+                    hasRelationshipDiv.style.background = '#e8f5e9'; // Light green
+                    hasRelationshipDiv.style.color = '#2e7d32'; // Dark green
+                    hasRelationshipDiv.textContent = 'دارای رابطه: بله';
+                } else if (section.has_relationship === false) {
+                    hasRelationshipDiv.style.background = '#ffebee'; // Light red
+                    hasRelationshipDiv.style.color = '#c62828'; // Dark red
+                    hasRelationshipDiv.textContent = 'دارای رابطه: خیر';
+                } else {
+                    hasRelationshipDiv.style.background = '#fff3e0'; // Light orange
+                    hasRelationshipDiv.style.color = '#ef6c00'; // Dark orange
+                    hasRelationshipDiv.textContent = 'دارای رابطه: نامشخص';
+                }
+                
+                hadithContainer.appendChild(hasRelationshipDiv);
+                
+                // Show relation_type and explanation in dedicated display areas
+                const relationTypeDisplay = document.getElementById('relationTypeDisplay');
+                const relationExplanationDisplay = document.getElementById('relationExplanationDisplay');
+                
+                if (relationTypeDisplay) {
+                    relationTypeDisplay.textContent = section.relation_type ? `نوع رابطه: ${section.relation_type}` : 'نوع رابطه: -';
+                }
+                
+                if (relationExplanationDisplay) {
+                    relationExplanationDisplay.textContent = section.explanation ? `توضیح: ${section.explanation}` : 'توضیح: -';
+                }
+                
+                // Collapsible Relationship Analysis
+                const relationshipDiv = document.createElement('div');
+                relationshipDiv.style.marginBottom = '0.5rem';
+                const relationshipHeader = document.createElement('button');
+                relationshipHeader.className = 'collapsible-header';
+                relationshipHeader.style = 'width:100%; text-align:left; background:#f3e5f5; color:#7b1fa2; border:none; border-radius:8px; padding:0.7rem 1rem; font-size:1.1rem; margin-bottom:0.2rem; cursor:pointer; display:flex; align-items:center; gap:8px; direction:ltr;';
+                relationshipHeader.innerHTML = '<span>تحلیل رابطه</span><span class="arrow">▲</span>';
+                const relationshipContent = document.createElement('div');
+                relationshipContent.className = 'collapsible-content';
+                relationshipContent.style = 'padding:1rem; background:var(--bg-color); border-radius:8px; font-size:1.1rem; line-height:1.8; color:#333; direction:ltr; text-align:left; display:none;';
+                
+                // Create content for relationship analysis including relation_type and explanation
+                let relationshipText = '';
+                if (section.relation_type) {
+                    relationshipText += `نوع رابطه: ${section.relation_type}\n\n`;
+                }
+                if (section.explanation) {
+                    relationshipText += `توضیح: ${section.explanation}\n\n`;
+                }
+                if (section.reason) {
+                    relationshipText += `دلیل: ${section.reason}`;
+                }
+                if (!relationshipText) {
+                    relationshipText = '(تحلیل رابطه موجود نیست)';
+                }
+                
+                relationshipContent.textContent = relationshipText;
+                relationshipDiv.appendChild(relationshipHeader);
+                relationshipDiv.appendChild(relationshipContent);
+                hadithContainer.appendChild(relationshipDiv);
+                
+                // Collapsible logic
+                [section1Header, section1RulesHeader, section2Header, section2RulesHeader, relationshipHeader].forEach((header, idx) => {
+                    header.addEventListener('click', function() {
+                        const content = this.nextElementSibling;
+                        const arrow = this.querySelector('.arrow');
+                        if (content.style.display === 'none') {
+                            content.style.display = '';
+                            arrow.textContent = '▼';
+                        } else {
+                            content.style.display = 'none';
+                            arrow.textContent = '▲';
+                        }
+                    });
+                });
+            } catch (err) {
+                console.error('Error in displayHadith:', err);
+                const hadithContainer = document.getElementById('hadithDisplay');
+                hadithContainer.innerHTML = '<div style="color:#f44336;">خطا در نمایش داده‌ها. لطفاً فایل را بررسی کنید یا با پشتیبانی تماس بگیرید.</div>';
+            }
+            populatePropDropdowns();
+            updateNavButtons();
+            // Update counter and progress bar
+            const counter = document.getElementById('hadithCounter');
+            if (counter && filteredSections.length) {
+                counter.textContent = `بخش ${selectedHadithIndex+1} از ${filteredSections.length}`;
+            }
+            const progressBar = document.getElementById('progressBar');
+            if (progressBar && filteredSections.length) {
+                progressBar.style.width = `${((selectedHadithIndex+1)/filteredSections.length)*100}%`;
+            }
+        }
+        function addProposition() {
+            // Propositions not supported in the new structure
+            const input = document.getElementById('newPropContent');
+            const typeInput = document.getElementById('newPropType');
+            const value = input.value.trim();
+            const typeValue = typeInput.value.trim();
+            if (!value || !typeValue) return;
+            showToast('هشدار', 'افزودن گزاره در ساختار جدید پشتیبانی نمی‌شود.', 'warning');
+            input.value = '';
+            typeInput.value = '';
+        }
+        function addGraphRelation() {
+            // Graph relations not supported in the new structure
+            const source = document.getElementById('newGraphSource').value;
+            const target = document.getElementById('newGraphTarget').value;
+            const type = document.getElementById('newGraphType').value.trim();
+            if (!source || !target || !type) return;
+            showToast('هشدار', 'افزودن رابطه در ساختار جدید پشتیبانی نمی‌شود.', 'warning');
+            document.getElementById('newGraphSource').selectedIndex = 0;
+            document.getElementById('newGraphTarget').selectedIndex = 0;
+            document.getElementById('newGraphType').value = '';
+        }
+        // Removed update relation functionality as per requirements
+        // Removed download functionality as per requirements
+        // Removed all editing functionality as per requirements
+        // Removed save and download functionality as per requirements
+        // Overlay file input
+        // Removed update relation functionality as per requirements
+        // Removed download functionality as per requirements
+        // Removed all editing functionality as per requirements
+        // Removed save and download functionality as per requirements
+        // On load, show overlay and disable UI
+        window.addEventListener('DOMContentLoaded', function() {
+            setUIEnabled(false);
+            document.getElementById('fileUploadOverlay').style.display = 'flex';
+            // Fix: Add event listeners for top navigation buttons
+            document.getElementById('prevHadithBtn').addEventListener('click', function() {
+                navigateHadith(-1);
+            });
+            document.getElementById('nextHadithBtn').addEventListener('click', function() {
+                navigateHadith(1);
+            });
+            
+            // Add event listeners for filter buttons
+            document.getElementById('applyFiltersBtn').addEventListener('click', applyFilters);
+            document.getElementById('clearFiltersBtn').addEventListener('click', clearFilters);
+            document.getElementById('changeFiltersBtn').addEventListener('click', function() {
+                // Pre-populate modal with current filter values
+                document.getElementById('filterModalHasRelationYes').checked = document.getElementById('filterHasRelationYes').checked;
+                document.getElementById('filterModalHasRelationNo').checked = document.getElementById('filterHasRelationNo').checked;
+                // document.getElementById('filterModalHasRelationUnknown').checked = document.getElementById('filterHasRelationUnknown').checked;
+                
+                // Pre-select Qanon values
+                const qanonSelect = document.getElementById('filterQanon');
+                const modalQanonSelect = document.getElementById('filterModalQanon');
+                Array.from(modalQanonSelect.options).forEach(option => {
+                    option.selected = Array.from(qanonSelect.selectedOptions).some(selected => selected.value === option.value);
+                });
+                
+                // Pre-select Relation Type values
+                const relationTypeSelect = document.getElementById('filterRelationType');
+                const modalRelationTypeSelect = document.getElementById('filterModalRelationType');
+                Array.from(modalRelationTypeSelect.options).forEach(option => {
+                    option.selected = Array.from(relationTypeSelect.selectedOptions).some(selected => selected.value === option.value);
+                });
+                
+                // Show modal
+                document.getElementById('filterModal').style.display = 'flex';
+            });
+            
+            // Add event listeners for modal filter buttons
+            document.getElementById('applyModalFiltersBtn').addEventListener('click', applyModalFilters);
+            document.getElementById('skipFiltersBtn').addEventListener('click', skipFilters);
+        });
+        document.getElementById('darkModeToggle').addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            document.getElementById('darkModeIcon').textContent = isDarkMode ? '☀️' : '🌙';
+            localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
+        });
+        window.onload = function() {
+            if (localStorage.getItem('darkMode') === 'enabled') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkModeIcon').textContent = '☀️';
+            }
+        }
+        // Floating Back to Top Button logic
+        const backToTopBtn = document.getElementById('backToTopBtn');
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 200) {
+                backToTopBtn.style.display = 'block';
+            } else {
+                backToTopBtn.style.display = 'none';
+            }
+        });
+        backToTopBtn.onclick = function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+        // Guide Modal logic
+        document.getElementById('guideBtn').onclick = function() {
+            document.getElementById('guideModal').style.display = 'flex';
+        };
+        document.getElementById('closeGuideModal').onclick = function() {
+            document.getElementById('guideModal').style.display = 'none';
+        };
+        document.getElementById('guideModal').addEventListener('click', function(e) {
+            if (e.target === this) this.style.display = 'none';
+        });
+        
+        // Beautiful color palette for categories
+        const beautifulColors = [
+            '#A12669', // Deep rose/magenta
+            '#AAC086'  // Soft sage green
+        ];
+        
+        // Function to get a beautiful color for categories
+        function getBeautifulColor(index) {
+            return beautifulColors[index % beautifulColors.length];
+        }
+        
+        // TTL Graph Visualization Functions
+        function initializeTTLGraph(ttlData, hadithIndex) {
+            try {
+                const container = document.getElementById(`ttl-graph-${hadithIndex}`);
+                if (!container) {
+                    console.error(`Container not found for hadith ${hadithIndex}`);
+                    return;
+                }
+                
+                // Initialize ECharts
+                const chart = echarts.init(container);
+                ttlCharts.set(hadithIndex, chart); // Store the chart
+                
+                // Parse TTL data
+                if (typeof N3 === 'undefined') {
+                    showToast('خطا', 'کتابخانه N3.js بارگذاری نشده است.', 'error');
+                    return;
+                }
+                
+                const parser = new N3.Parser();
+                const store = new N3.Store();
+                let parsingError = null;
+                
+                parser.parse(ttlData, (error, quad, prefixes) => {
+                    if (parsingError) return;
+                    if (error) {
+                        parsingError = error;
+                        console.error("Error during N3 parsing:", error);
+                        return;
+                    }
+                    if (quad) {
+                        store.addQuad(quad);
+                    } else {
+                        // Parsing complete
+                        if (parsingError) {
+                            showToast('خطا', `خطا در پردازش TTL: ${parsingError.message}`, 'error');
+                            return;
+                        }
+                        
+                        if (store.size === 0) {
+                            showToast('هشدار', 'داده‌های TTL خالی یا نامعتبر است.', 'warning');
+                            return;
+                        }
+                        
+                        try {
+                            const { nodes, links } = transformRdfToEcharts(store, prefixes);
+                            renderTTLGraph(chart, nodes, links, hadithIndex);
+                        } catch (transformError) {
+                            showToast('خطا', `خطا در تبدیل داده‌ها: ${transformError.message}`, 'error');
+                        }
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error initializing TTL graph:', error);
+                showToast('خطا', 'خطا در راه‌اندازی گراف TTL', 'error');
+            }
+        }
+        
+        function transformRdfToEcharts(store, prefixes) {
+            const nodes = [];
+            const links = [];
+            const nodeMap = new Map();
+            const connectedNodes = new Set();
+            
+            // Helper function to get readable name from term
+            function getTermName(term) {
+                if (term.termType === 'NamedNode') {
+                    const uri = term.value;
+                    // Try to extract a readable name from the URI
+                    const parts = uri.split(/[#\/]/);
+                    return parts[parts.length - 1] || uri;
+                } else if (term.termType === 'Literal') {
+                    return term.value;
+                } else if (term.termType === 'BlankNode') {
+                    return `_:${term.value}`;
+                }
+                return term.value;
+            }
+            
+            // Helper function to guess category
+            function guessCategory(term, store, prefixes, getTermNameFunc) {
+                if (term.termType === 'NamedNode') {
+                    const uri = term.value;
+                    if (uri.includes('ontology') || uri.includes('go:')) return 'Ontology';
+                    if (uri.includes('instances') || uri.includes('ex:')) return 'Instance';
+                    if (uri.includes('Command') || uri.includes('Statement')) return 'Proposition';
+                    if (uri.includes('Person') || uri.includes('DivineBeing')) return 'Entity';
+                    if (uri.includes('Event') || uri.includes('State')) return 'Event';
+                    if (uri.includes('Concept')) return 'Concept';
+                }
+                return 'Other';
+            }
+            
+            // Process all quads
+            store.forEach(quad => {
+                const subject = quad.subject;
+                const predicate = quad.predicate;
+                const object = quad.object;
+                
+                const subjectId = subject.value;
+                const objectId = object.value;
+                const predicateId = getTermName(predicate);
+                
+                // Track connected nodes
+                if (object.termType === 'NamedNode') {
+                    connectedNodes.add(subjectId);
+                    connectedNodes.add(objectId);
+                }
+                
+                // Add subject node if not exists
+                if (!nodeMap.has(subjectId)) {
+                    const nodeName = getTermName(subject);
+                    const category = guessCategory(subject, store, prefixes, getTermName);
+                    
+                    // Apply visual styling based on node type
+                    let nodeSymbol = undefined;
+                    let nodeItemStyle = undefined;
+                    let nodeSymbolSize = undefined;
+                    
+                    if (typeof subjectId === 'string' && subjectId.startsWith('go:')) {
+                        nodeSymbol = 'diamond';
+                        nodeItemStyle = { color: '#FFA500' }; // Orange for diamonds
+                        nodeSymbolSize = 70; // Bigger size for diamonds
+                    }
+                    
+                    const node = {
+                        id: subjectId,
+                        name: nodeName,
+                        category: category,
+                        properties: {},
+                        itemStyle: {
+                            opacity: 1.0 // Default opacity for connected nodes
+                        },
+                        ...(nodeSymbol ? { symbol: nodeSymbol } : {}),
+                        ...(nodeItemStyle ? { itemStyle: { ...nodeItemStyle, opacity: 1.0 } } : {}),
+                        ...(nodeSymbolSize ? { symbolSize: nodeSymbolSize } : {})
+                    };
+                    nodes.push(node);
+                    nodeMap.set(subjectId, node);
+                }
+                
+                // Add object node if it's a NamedNode and not exists
+                if (object.termType === 'NamedNode' && !nodeMap.has(objectId)) {
+                    const nodeName = getTermName(object);
+                    const category = guessCategory(object, store, prefixes, getTermName);
+                    
+                    // Apply visual styling based on node type
+                    let nodeSymbol = undefined;
+                    let nodeItemStyle = undefined;
+                    let nodeSymbolSize = undefined;
+                    
+                    if (typeof objectId === 'string' && objectId.startsWith('go:')) {
+                        nodeSymbol = 'diamond';
+                        nodeItemStyle = { color: '#FFA500' }; // Orange for diamonds
+                        nodeSymbolSize = 70; // Bigger size for diamonds
+                    }
+                    
+                    const node = {
+                        id: objectId,
+                        name: nodeName,
+                        category: category,
+                        properties: {},
+                        itemStyle: {
+                            opacity: 1.0 // Default opacity for connected nodes
+                        },
+                        ...(nodeSymbol ? { symbol: nodeSymbol } : {}),
+                        ...(nodeItemStyle ? { itemStyle: { ...nodeItemStyle, opacity: 1.0 } } : {}),
+                        ...(nodeSymbolSize ? { symbolSize: nodeSymbolSize } : {})
+                    };
+                    nodes.push(node);
+                    nodeMap.set(objectId, node);
+                }
+                
+                // Add link
+                if (object.termType === 'NamedNode') {
+                    const link = {
+                        source: subjectId,
+                        target: objectId,
+                        label: { text: predicateId }
+                    };
+                    links.push(link);
+                }
+                
+                // Add properties to nodes
+                if (object.termType === 'Literal') {
+                    const subjectNode = nodeMap.get(subjectId);
+                    if (subjectNode) {
+                        const predName = getTermName(predicate);
+                        subjectNode.properties[predName] = objectId;
+                    }
+                }
+            });
+            
+            // Make isolated nodes transparent
+            nodes.forEach(node => {
+                if (!connectedNodes.has(node.id)) {
+                    if (!node.itemStyle) {
+                        node.itemStyle = {};
+                    }
+                    node.itemStyle.opacity = 0.3; // Make isolated nodes transparent
+                }
+            });
+            
+            return { nodes, links };
+        }
+        
+        function renderTTLGraph(chart, nodes, links, hadithIndex) {
+            // Extract categories with beautiful colors
+            const categories = [];
+            const categorySet = new Set();
+            let colorIndex = 0;
+            nodes.forEach(node => {
+                if (!categorySet.has(node.category)) {
+                    categorySet.add(node.category);
+                    categories.push({ 
+                        name: node.category,
+                        itemStyle: { color: getBeautifulColor(colorIndex++) }
+                    });
+                }
+            });
+            
+            const option = {
+                tooltip: {
+                    formatter: function (params) {
+                        if (params.dataType === 'node' && params.data) {
+                            let tip = params.data.name;
+                            if (params.data.properties) {
+                                for (const prop in params.data.properties) {
+                                    tip += `<br/>${prop}: ${params.data.properties[prop]}`;
+                                }
+                            }
+                            return tip;
+                        } else if (params.dataType === 'edge' && params.data.label && params.data.label.text) {
+                            return params.data.label.text;
+                        }
+                        return params.name;
+                    }
+                },
+                legend: {
+                    data: categories.map(c => c.name),
+                    orient: 'vertical',
+                    left: 'left',
+                    top: 'middle'
+                },
+                series: [{
+                    type: 'graph',
+                    layout: 'force',
+                    roam: true,
+                    draggable: true,
+                    label: {
+                        show: true,
+                        position: 'right',
+                        formatter: '{b}'
+                    },
+                    categories: categories,
+                    data: nodes,
+                    links: links,
+                    symbolSize: 50, // Default symbol size
+                    edgeSymbol: ['circle', 'arrow'], // Edge symbols
+                    edgeSymbolSize: [4, 10], // Edge symbol sizes
+                    lineStyle: {
+                        opacity: 0.9,
+                        width: 2,
+                        curveness: 0
+                    },
+                    edgeLabel: {
+                        show: true,
+                        formatter: function (params) {
+                            return params.data && params.data.label && params.data.label.text
+                                ? params.data.label.text
+                                : '';
+                        },
+                        fontSize: 10 // Smaller font for edge labels
+                    },
+                    force: {
+                        edgeLength: 200,
+                        repulsion: 1200,
+                        gravity: 0.1
+                    },
+                    itemStyle: {
+                        color: function(params) {
+                            // Check if node has custom styling (like diamond nodes)
+                            if (params.data.itemStyle && params.data.itemStyle.color) {
+                                return params.data.itemStyle.color;
+                            }
+                            // Default category-based coloring using random colors
+                            const category = categories.find(c => c.name === params.data.category);
+                            return category && category.itemStyle ? category.itemStyle.color : '#5470c6';
+                        }
+                    }
+                }]
+            };
+            
+            chart.setOption(option);
+            
+            // Add control event listeners
+            setTimeout(() => {
+                const zoomInBtn = document.getElementById(`ttlZoomInBtn-${hadithIndex}`);
+                const zoomOutBtn = document.getElementById(`ttlZoomOutBtn-${hadithIndex}`);
+                const fitBtn = document.getElementById(`ttlFitBtn-${hadithIndex}`);
+                const resetBtn = document.getElementById(`ttlResetBtn-${hadithIndex}`);
+                
+                if (zoomInBtn) zoomInBtn.onclick = () => {
+                    const currentZoom = chart.getOption().series[0].zoom || 1;
+                    chart.setOption({ series: [{ zoom: currentZoom * 1.2 }] });
+                };
+                
+                if (zoomOutBtn) zoomOutBtn.onclick = () => {
+                    const currentZoom = chart.getOption().series[0].zoom || 1;
+                    chart.setOption({ series: [{ zoom: currentZoom / 1.2 }] });
+                };
+                
+                if (fitBtn) fitBtn.onclick = () => {
+                    chart.resize();
+                };
+                
+                if (resetBtn) resetBtn.onclick = () => {
+                    chart.setOption(option, true);
+                };
+            }, 100);
+            
+            // Update stats
+            updateTTLStats(nodes.length, links.length, hadithIndex);
+        }
+        
+        function updateTTLStats(nodeCount, linkCount, hadithIndex) {
+            const statsDisplay = document.getElementById(`ttl-stats-${hadithIndex}`);
+            if (statsDisplay) {
+                statsDisplay.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; gap: 8px;">
+                        <div style="flex: 1; padding: 4px 8px; background: rgba(0,0,0,0.03); border-radius: 4px; text-align: center;">
+                            <span style="color: #666; font-size: 0.9em;">گره‌ها:</span>
+                            <span style="color: #333; font-weight: 500;">${nodeCount}</span>
+                        </div>
+                        <div style="flex: 1; padding: 4px 8px; background: rgba(0,0,0,0.03); border-radius: 4px; text-align: center;">
+                            <span style="color: #666; font-size: 0.9em;">روابط:</span>
+                            <span style="color: #333; font-weight: 500;">${linkCount}</span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        function cleanupTTLCharts() {
+            // Dispose of charts that are no longer needed
+            ttlCharts.forEach((chart, index) => {
+                if (chart && !chart.isDisposed()) {
+                    chart.dispose();
+                }
+            });
+            ttlCharts.clear();
+        }
+    </script>
+</body>
+</html>
