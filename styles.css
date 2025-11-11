@@ -423,15 +423,15 @@ input[type="checkbox"] {
 }
 
 .edit-input {
-    padding: 6px 12px;
+    padding: 10px 15px;    
     border: 2px solid var(--primary-color);
     border-radius: 8px;
     margin-right: 8px;
     font-family: 'Vazirmatn', sans-serif;
     direction: rtl;
-    font-size: 0.95rem;
+    font-size: 1.1rem;   
     transition: all 0.3s ease;
-    width: 390px;
+    width: 1000px;       
 }
 
 .edit-input:focus {

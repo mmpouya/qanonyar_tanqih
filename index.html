@@ -1419,6 +1419,14 @@
             input.value = currentText;
             input.style.flex = '1';
             
+            // Set different widths for different fields
+            if (field === 'explanation') {
+                input.style.width = '1000px';  // Longer width for explanation
+                input.style.height = '250px'; 
+            } else {
+                input.style.width = '1000px';  // Shorter width for relation_type
+            }
+            
             // Create save button
             const saveButton = document.createElement('button');
             saveButton.className = 'save-edit';
