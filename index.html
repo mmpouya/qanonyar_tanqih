@@ -181,10 +181,22 @@
             <span title="نوع رابطه بین دو بخش قانونی و توضیح آن" style="cursor:help; font-size:1.2rem; color:#00acc1;">ℹ️</span>
         </h3>
         <div class="relation-info">
-            <div id="relationTypeDisplay" style="margin-bottom: 0.5rem; padding: 0.5rem; background: var(--bg-color); border-radius: 8px;"></div>
-            <div id="relationExplanationDisplay" style="margin-bottom: 0.5rem; padding: 0.5rem; background: var(--bg-color); border-radius: 8px;"></div>
+            <div id="relationTypeDisplay" style="margin-bottom: 0.5rem; padding: 0.5rem; background: var(--bg-color); border-radius: 8px; display: flex; align-items: center;">
+                <span id="relationTypeText"></span>
+                <button id="editRelationTypeBtn" class="edit-button" title="ویرایش نوع رابطه">✏️</button>
+            </div>
+            <div id="relationExplanationDisplay" style="margin-bottom: 0.5rem; padding: 0.5rem; background: var(--bg-color); border-radius: 8px; display: flex; align-items: center;">
+                <span id="relationExplanationText"></span>
+                <button id="editExplanationBtn" class="edit-button" title="ویرایش توضیح">✏️</button>
+            </div>
         </div>
-        <!-- Removed save and download button as per requirements -->
+        <!-- Save and Download Button -->
+        <div style="margin-top: 1rem; text-align: center;">
+            <button id="saveDownloadBtn" class="button button-primary" style="display: flex; align-items: center; gap: 8px; margin: 0 auto;">
+                <span>💾</span>
+                <span>ذخیره و دانلود</span>
+            </button>
+        </div>
         <!-- Navigation Buttons (Bottom) -->
         <div id="navButtonsBottom" class="nav-buttons beautiful-nav" style="justify-content:center; margin-top:0.5rem;">
             <button id="backBtnBottom" class="button button-secondary beautiful-nav-btn" style="min-width:100px;" onclick="navigateHadith(-1)">
@@ -804,15 +816,15 @@
                 hadithContainer.appendChild(hasRelationshipDiv);
                 
                 // Show relation_type and explanation in dedicated display areas
-                const relationTypeDisplay = document.getElementById('relationTypeDisplay');
-                const relationExplanationDisplay = document.getElementById('relationExplanationDisplay');
+                const relationTypeText = document.getElementById('relationTypeText');
+                const relationExplanationText = document.getElementById('relationExplanationText');
                 
-                if (relationTypeDisplay) {
-                    relationTypeDisplay.textContent = section.relation_type ? `نوع رابطه: ${section.relation_type}` : 'نوع رابطه: -';
+                if (relationTypeText) {
+                    relationTypeText.textContent = section.relation_type ? `نوع رابطه: ${section.relation_type}` : 'نوع رابطه: -';
                 }
                 
-                if (relationExplanationDisplay) {
-                    relationExplanationDisplay.textContent = section.explanation ? `توضیح: ${section.explanation}` : 'توضیح: -';
+                if (relationExplanationText) {
+                    relationExplanationText.textContent = section.explanation ? `توضیح: ${section.explanation}` : 'توضیح: -';
                 }
                 
                 // Collapsible Relationship Analysis
@@ -950,6 +962,18 @@
             // Add event listeners for modal filter buttons
             document.getElementById('applyModalFiltersBtn').addEventListener('click', applyModalFilters);
             document.getElementById('skipFiltersBtn').addEventListener('click', skipFilters);
+            
+            // Add event listeners for edit buttons
+            document.getElementById('editRelationTypeBtn').addEventListener('click', function() {
+                startEditing('relation_type');
+            });
+            
+            document.getElementById('editExplanationBtn').addEventListener('click', function() {
+                startEditing('explanation');
+            });
+            
+            // Add event listener for save and download button
+            document.getElementById('saveDownloadBtn').addEventListener('click', downloadModifiedData);
         });
         document.getElementById('darkModeToggle').addEventListener('click', function() {
             document.body.classList.toggle('dark-mode');
@@ -1350,6 +1374,178 @@
             });
             ttlCharts.clear();
         }
+        
+        // Add editing functionality
+        let editedSections = {}; // To cache changes
+        
+        // Function to get current section with edits applied
+        function getCurrentSectionWithEdits() {
+            const section = getCurrentHadith();
+            if (!section) return null;
+            
+            // Apply cached edits if they exist
+            const sectionIndex = selectedHadithIndex;
+            if (editedSections[sectionIndex]) {
+                return { ...section, ...editedSections[sectionIndex] };
+            }
+            
+            return section;
+        }
+        
+        // Function to start editing a field
+        function startEditing(field) {
+            const section = getCurrentSectionWithEdits();
+            if (!section) return;
+            
+            const displayElement = field === 'relation_type' ? 
+                document.getElementById('relationTypeDisplay') : 
+                document.getElementById('relationExplanationDisplay');
+                
+            const textElement = field === 'relation_type' ? 
+                document.getElementById('relationTypeText') : 
+                document.getElementById('relationExplanationText');
+                
+            const editButton = field === 'relation_type' ? 
+                document.getElementById('editRelationTypeBtn') : 
+                document.getElementById('editExplanationBtn');
+            
+            // Save current text
+            const currentText = section[field] || '';
+            
+            // Create input field
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'edit-input';
+            input.value = currentText;
+            input.style.flex = '1';
+            
+            // Create save button
+            const saveButton = document.createElement('button');
+            saveButton.className = 'save-edit';
+            saveButton.innerHTML = '✓';
+            saveButton.title = 'ذخیره';
+            
+            // Create cancel button
+            const cancelButton = document.createElement('button');
+            cancelButton.className = 'cancel-edit';
+            cancelButton.innerHTML = '✕';
+            cancelButton.title = 'لغو';
+            
+            // Create actions container
+            const actionsContainer = document.createElement('div');
+            actionsContainer.className = 'edit-actions';
+            actionsContainer.appendChild(saveButton);
+            actionsContainer.appendChild(cancelButton);
+            
+            // Clear display element and add input and buttons
+            displayElement.innerHTML = '';
+            displayElement.appendChild(input);
+            displayElement.appendChild(actionsContainer);
+            
+            // Focus input
+            input.focus();
+            
+            // Save handler
+            saveButton.addEventListener('click', function() {
+                const newValue = input.value.trim();
+                
+                // Cache the edit
+                const sectionIndex = selectedHadithIndex;
+                if (!editedSections[sectionIndex]) {
+                    editedSections[sectionIndex] = {};
+                }
+                editedSections[sectionIndex][field] = newValue || null;
+                
+                // Update display
+                finishEditing(field, newValue);
+                
+                showToast('موفقیت', 'تغییرات با موفقیت ذخیره شد.', 'success');
+            });
+            
+            // Cancel handler
+            cancelButton.addEventListener('click', function() {
+                finishEditing(field, currentText);
+            });
+            
+            // Also save on Enter key
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    saveButton.click();
+                } else if (e.key === 'Escape') {
+                    cancelButton.click();
+                }
+            });
+        }
+        
+        // Function to finish editing and restore display
+        function finishEditing(field, value) {
+            const displayElement = field === 'relation_type' ? 
+                document.getElementById('relationTypeDisplay') : 
+                document.getElementById('relationExplanationDisplay');
+                
+            // Create new text element
+            const newTextElement = document.createElement('span');
+            newTextElement.id = field === 'relation_type' ? 'relationTypeText' : 'relationExplanationText';
+            
+            // Update text
+            const displayText = value ? 
+                (field === 'relation_type' ? `نوع رابطه: ${value}` : `توضیح: ${value}`) : 
+                (field === 'relation_type' ? 'نوع رابطه: -' : 'توضیح: -');
+                
+            newTextElement.textContent = displayText;
+            
+            // Create new edit button
+            const newEditButton = document.createElement('button');
+            newEditButton.id = field === 'relation_type' ? 'editRelationTypeBtn' : 'editExplanationBtn';
+            newEditButton.className = 'edit-button';
+            newEditButton.title = field === 'relation_type' ? 'ویرایش نوع رابطه' : 'ویرایش توضیح';
+            newEditButton.innerHTML = '✏️';
+            
+            // Add event listener to new edit button
+            newEditButton.addEventListener('click', function() {
+                startEditing(field);
+            });
+            
+            // Clear display element and restore original structure
+            displayElement.innerHTML = '';
+            displayElement.appendChild(newTextElement);
+            displayElement.appendChild(newEditButton);
+        }
+        
+        // Function to download modified data
+        function downloadModifiedData() {
+            // Create a copy of the original data with edits applied
+            const modifiedSections = sections.map((section, index) => {
+                if (editedSections[index]) {
+                    return { ...section, ...editedSections[index] };
+                }
+                return section;
+            });
+            
+            // Create filename with current timestamp
+            const now = new Date();
+            const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+            const fileName = uploadedFileName ? 
+                `${uploadedFileName.replace('.json', '')}_${timestamp}.json` : 
+                `modified_data_${timestamp}.json`;
+            
+            // Create and download file
+            const dataStr = JSON.stringify(modifiedSections, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showToast('موفقیت', `فایل با موفقیت دانلود شد: ${fileName}`, 'success');
+        }
+        
+
     </script>
 </body>
 </html>
