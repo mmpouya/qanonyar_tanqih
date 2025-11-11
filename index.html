@@ -832,20 +832,14 @@
                 relationshipDiv.style.marginBottom = '0.5rem';
                 const relationshipHeader = document.createElement('button');
                 relationshipHeader.className = 'collapsible-header';
-                relationshipHeader.style = 'width:100%; text-align:left; background:#f3e5f5; color:#7b1fa2; border:none; border-radius:8px; padding:0.7rem 1rem; font-size:1.1rem; margin-bottom:0.2rem; cursor:pointer; display:flex; align-items:center; gap:8px; direction:ltr;';
+                relationshipHeader.style = 'width:100%; text-align:right; background:#f3e5f5; color:#7b1fa2; border:none; border-radius:8px; padding:0.7rem 1rem; font-size:1.1rem; margin-bottom:0.2rem; cursor:pointer; display:flex; align-items:center; gap:8px; direction:rtl;';
                 relationshipHeader.innerHTML = '<span>تحلیل رابطه</span><span class="arrow">▲</span>';
                 const relationshipContent = document.createElement('div');
                 relationshipContent.className = 'collapsible-content';
-                relationshipContent.style = 'padding:1rem; background:var(--bg-color); border-radius:8px; font-size:1.1rem; line-height:1.8; color:#333; direction:ltr; text-align:left; display:none;';
+                relationshipContent.style = 'padding:1rem; background:var(--bg-color); border-radius:8px; font-size:1.1rem; line-height:1.8; color:#333; direction:rtl; text-align:left; display:none;';
                 
                 // Create content for relationship analysis including relation_type and explanation
                 let relationshipText = '';
-                if (section.relation_type) {
-                    relationshipText += `نوع رابطه: ${section.relation_type}\n\n`;
-                }
-                if (section.explanation) {
-                    relationshipText += `توضیح: ${section.explanation}\n\n`;
-                }
                 if (section.reason) {
                     relationshipText += `دلیل: ${section.reason}`;
                 }

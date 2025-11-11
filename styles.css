@@ -45,6 +45,10 @@ body {
     margin: 2rem auto;
 }
 
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Vazirmatn', sans-serif;
+}
+
 h2 {
     color: var(--primary-color);
     margin: 0;
@@ -432,6 +436,11 @@ input[type="checkbox"] {
     font-size: 1.1rem;   
     transition: all 0.3s ease;
     width: 1000px;       
+    
+    /* For textarea support */
+    resize: vertical;
+    min-height: 30px;
+    box-sizing: border-box;
 }
 
 .edit-input:focus {
@@ -524,7 +533,7 @@ input[type="checkbox"] {
     margin-left: 2px;
     margin-right: 2px;
     letter-spacing: 0.5px;
-    direction: ltr;
+    direction: rtl;
     font-family: monospace;
 }
 
