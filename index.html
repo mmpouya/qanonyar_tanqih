@@ -722,7 +722,7 @@
                 // Clean up previous TTL charts
                 cleanupTTLCharts();
                 
-                const section = getCurrentHadith();
+                const section = getCurrentSectionWithEdits();
                 console.log('Displaying section at index', selectedHadithIndex, ':', section);
                 const hadithContainer = document.getElementById('hadithDisplay');
                 hadithContainer.innerHTML = '';
