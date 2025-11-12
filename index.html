@@ -1542,7 +1542,7 @@
             // Create a copy of the original data with edits applied
             const modifiedSections = sections.map((section, index) => {
                 if (editedSections[index]) {
-                    return { ...section, ...editedSections[index] };
+                    return { ...section, ...editedSections[index], is_edited: true };
                 }
                 return section;
             });
