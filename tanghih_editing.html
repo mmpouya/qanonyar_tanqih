@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحلیل بخش‌های قانونی</title>
+    <!-- Vazirmatn font import -->
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700&display=swap" rel="stylesheet">
+        <!-- 🔹 اضافه کردن manifest.json برای PWA -->
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("service-worker.js")
+                .then(() => console.log("✅ Service Worker ثبت شد و سایت آماده آفلاین است!"))
+                .catch((error) => console.log("❌ خطا در ثبت Service Worker:", error));
+        }
+    </script>
+        
+        <!-- سایر لینک‌ها و استایل‌های سایت -->
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        * {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <!-- Overlay for file upload -->
+    <div id="fileUploadOverlay" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,136,229,0.18);z-index:20000;display:flex;align-items:center;justify-content:center;">
+        <div style="background:#fff;color:#1565c0;border-radius:14px;box-shadow:0 8px 32px rgba(30,136,229,0.18);padding:2.5rem 2.5rem;max-width:420px;width:90vw;text-align:center;">
+            <h2 style="margin-bottom:1rem;">بارگذاری فایل بخش‌های قانونی</h2>
+            <p style="margin-bottom:2rem;">لطفاً ابتدا فایل JSON بخش‌های قانونی را بارگذاری کنید تا بتوانید از امکانات برنامه استفاده کنید.</p>
+            <label class="file-upload-label" style="margin-bottom:0;">
+                <span>📁 انتخاب فایل JSON</span>
+                <input type="file" id="jsonFileOverlay" accept="application/json">
+            </label>
+        </div>
+    </div>
+    <!-- Dark mode toggle (top left, small) -->
+    <button id="darkModeToggle" style="position:fixed;top:1rem;left:1rem;z-index:10001;display:flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;border-radius:50%;font-size:1.2rem;background:var(--primary-color);color:white;border:none;box-shadow:0 2px 6px rgba(30,136,229,0.10);">
+        <span id="darkModeIcon">🌙</span>
+    </button>
+    <!-- Login/User Info (top right) -->
+    <div id="userInfoContainer" style="position:fixed;top:1rem;right:1rem;z-index:10001;display:none;">
+        <span id="userInfoText" style="margin-left:0.5rem;color:var(--primary-color);"></span>
+        <button id="logoutBtn" class="button button-secondary" style="padding:0.3rem 0.8rem;font-size:0.9rem;">خروج</button>
+    </div>
+    <button id="loginBtn" style="position:fixed;top:1rem;right:1rem;z-index:10001;padding:0.3rem 1rem;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9rem;">ورود / ثبت‌نام</button>
+    <!-- Login/Register Modal -->
+    <div id="loginModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,136,229,0.18);z-index:20001;align-items:center;justify-content:center;">
+        <div style="background:#fff;color:#1565c0;border-radius:14px;box-shadow:0 8px 32px rgba(30,136,229,0.18);padding:2.5rem 2.5rem;max-width:420px;width:90vw;position:relative;">
+            <button id="closeLoginModal" style="position:absolute;top:12px;left:12px;background:transparent;border:none;font-size:1.3rem;color:#1565c0;cursor:pointer;">✖️</button>
+            <h2 style="margin-bottom:1rem;text-align:center;">ورود / ثبت‌نام</h2>
+            <div id="loginForm">
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;margin-bottom:0.3rem;">نام کاربری:</label>
+                    <input type="text" id="loginUsername" style="width:100%;padding:0.5rem;border:1px solid #ddd;border-radius:6px;font-size:1rem;">
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;margin-bottom:0.3rem;">رمز عبور:</label>
+                    <input type="password" id="loginPassword" style="width:100%;padding:0.5rem;border:1px solid #ddd;border-radius:6px;font-size:1rem;">
+                </div>
+                <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+                    <button id="submitLogin" class="button button-primary" style="flex:1;">ورود</button>
+                    <button id="submitRegister" class="button button-secondary" style="flex:1;">ثبت‌نام</button>
+                </div>
+                <div id="loginError" style="color:#f44336;text-align:center;display:none;margin-top:0.5rem;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="container disabled-ui" id="mainContainer">
+        <!-- Step-by-step guide (compact) -->
+        <button id="guideBtn" style="position:absolute; top:18px; right:32px; background:transparent; color:#1565c0; border:none; font-size:1.2rem; cursor:pointer; z-index:10; display:flex; align-items:center; gap:4px;">
+            <span>راهنما</span> <span style="font-size:1.3rem;">ℹ️</span>
+        </button>
+        <!-- Guide Modal -->
+        <div id="guideModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(30,136,229,0.12); z-index:9999; align-items:center; justify-content:center;">
+            <div style="background:#fff; color:#1565c0; border-radius:14px; box-shadow:0 8px 32px rgba(30,136,229,0.18); padding:2rem 2.5rem; max-width:420px; width:90vw; position:relative;">
+                <button id="closeGuideModal" style="position:absolute; top:12px; left:12px; background:transparent; border:none; font-size:1.3rem; color:#1565c0; cursor:pointer;">✖️</button>
+                <strong style="font-size:1.1rem;">راهنمای مراحل:</strong>
+                <ol style="margin:1rem 0 0 0; padding-right:1.2rem; color:#333; font-size:1.02rem;">
+                    <li>ابتدا فایل JSON بخش‌های قانونی را بارگذاری کنید.</li>
+                    <li>بخش مورد نظر را از لیست انتخاب نمایید.</li>
+                    <li>محتوای بخش‌ها را مشاهده کنید.</li>
+                    <li>در پایان، فایل ویرایش‌شده را ذخیره و دانلود نمایید.</li>
+                </ol>
+            </div>
+        </div>
+        <!-- File Upload Section -->
+        <h3 style="color:var(--primary-color); margin-bottom:0.5rem;">۱. بارگذاری فایل بخش‌های قانونی</h3>
+        <div class="file-upload" style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+            <label class="file-upload-label">
+                <span>📁 انتخاب فایل JSON</span>
+                <input type="file" id="jsonFile" accept="application/json">
+            </label>
+            <button id="loadSampleDataBtn" class="button button-secondary" style="display:none;padding:0.7rem 1.5rem;">
+                <span>📋 بارگذاری داده نمونه</span>
+            </button>
+        </div>
+        <!-- Navigation Buttons (Top) -->
+        <div id="navButtonsTop" class="nav-buttons beautiful-nav" style="justify-content:center; margin-bottom:0.5rem;">
+            <button id="prevHadithBtn" class="button-nav beautiful-nav-btn">
+                <span class="nav-icon">&#8592;</span>
+                <span>قبلی</span>
+            </button>
+            <button id="nextHadithBtn" class="button-nav beautiful-nav-btn">
+                <span>بعدی</span>
+                <span class="nav-icon">&#8594;</span>
+            </button>
+        </div>
+        <!-- Hadith Selector Section -->
+        <div id="hadithSelectorContainer" style="display:none; margin-bottom:1rem;align-items:center;gap:1rem;">
+            <h3 style="color:var(--primary-color); margin-bottom:0.5rem;">۲. انتخاب بخش</h3>
+            <label for="hadithSelector">انتخاب بخش:</label>
+            <select id="hadithSelector"></select>
+            <span id="hadithCounter" class="hadith-counter" style="margin-right:1rem;"></span>
+        </div>
+        <!-- Filter Section -->
+        <div id="filterSection" style="display:none; margin-bottom:1rem; padding:1rem; background:var(--bg-color); border-radius:8px;">
+            <h3 style="color:var(--primary-color); margin-bottom:0.5rem;">فیلترها</h3>
+            <div style="display:flex; flex-wrap:wrap; gap:1rem; margin-bottom:0.5rem;">
+                <!-- Has Relationship Filter -->
+                <div>
+                    <label style="display:block; margin-bottom:0.3rem;">دارای رابطه:</label>
+                    <div style="display:flex; gap:0.5rem;">
+                        <label style="display:flex; align-items:center; gap:0.3rem;">
+                            <input type="checkbox" id="filterHasRelationYes" value="true"> بله
+                        </label>
+                        <label style="display:flex; align-items:center; gap:0.3rem;">
+                            <input type="checkbox" id="filterHasRelationNo" value="false"> خیر
+                        </label>
+                    </div>
+                </div>
+                <!-- Qanon Filter -->
+                <div>
+                    <label style="display:block; margin-bottom:0.3rem;">نام قانون:</label>
+                    <select id="filterQanon" multiple style="min-width:200px; min-height:80px; padding:0.3rem;">
+                        <option value="">همه</option>
+                    </select>
+                </div>
+                <!-- Relation Type Filter -->
+                <div>
+                    <label style="display:block; margin-bottom:0.3rem;">نوع رابطه:</label>
+                    <select id="filterRelationType" multiple style="min-width:200px; min-height:80px; padding:0.3rem;">
+                        <option value="">همه</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex; gap:0.5rem;">
+                <button id="applyFiltersBtn" class="button button-primary" style="min-width:100px;">اعمال فیلتر</button>
+                <button id="clearFiltersBtn" class="button button-secondary" style="min-width:100px;">حذف فیلترها</button>
+            </div>
+        </div>
+        <!-- Filter Button (replaces filter section after filtering) -->
+        <div id="filterButtonSection" style="display:none; margin-bottom:1rem; padding:1rem; background:var(--bg-color); border-radius:8px; text-align:center;">
+            <button id="changeFiltersBtn" class="button button-primary" style="min-width:200px;">تغییر فیلترها</button>
+        </div>
+        <!-- Filter Modal -->
+        <div id="filterModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(30,136,229,0.12); z-index:9999; align-items:center; justify-content:center;">
+            <div style="background:#fff; color:#1565c0; border-radius:14px; box-shadow:0 8px 32px rgba(30,136,229,0.18); padding:2rem 2.5rem; max-width:600px; width:90vw; position:relative;">
+                <h3 style="color:var(--primary-color); margin-bottom:1rem;">انتخاب فیلترها</h3>
+                <div style="display:flex; flex-wrap:wrap; gap:1rem; margin-bottom:1rem;">
+                    <!-- Has Relationship Filter -->
+                    <div style="flex:1; min-width:200px;">
+                        <label style="display:block; margin-bottom:0.3rem;">دارای رابطه:</label>
+                        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                            <label style="display:flex; align-items:center; gap:0.3rem;">
+                                <input type="checkbox" id="filterModalHasRelationYes" value="true"> بله
+                            </label>
+                            <label style="display:flex; align-items:center; gap:0.3rem;">
+                                <input type="checkbox" id="filterModalHasRelationNo" value="false"> خیر
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Qanon Filter -->
+                    <div style="flex:1; min-width:200px;">
+                        <label style="display:block; margin-bottom:0.3rem;">نام قانون:</label>
+                        <select id="filterModalQanon" multiple style="width:100%; min-height:100px; padding:0.3rem;">
+                        </select>
+                    </div>
+                    <!-- Relation Type Filter -->
+                    <div style="flex:1; min-width:200px;">
+                        <label style="display:block; margin-bottom:0.3rem;">نوع رابطه:</label>
+                        <select id="filterModalRelationType" multiple style="width:100%; min-height:100px; padding:0.3rem;">
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:center; gap:1rem; margin-top:1rem;">
+                    <button id="applyModalFiltersBtn" class="button button-primary" style="min-width:120px;">اعمال فیلتر</button>
+                    <button id="skipFiltersBtn" class="button button-secondary" style="min-width:120px;">مشاهده همه</button>
+                </div>
+            </div>
+        </div>
+        <!-- Progress bar -->
+        <div id="progressBarContainer" style="width:100%;height:8px;background:#e3f2fd;border-radius:4px;margin-bottom:1rem;display:none;">
+            <div id="progressBar" style="height:100%;background:#1e88e5;width:0%;border-radius:4px;transition:width 0.3s;"></div>
+        </div>
+        <!-- Hadith Display Section -->
+        <h3 style="color:var(--primary-color); margin-bottom:0.5rem;">۳. نمایش و ویرایش</h3>
+        <div id="hadithDisplay">
+            <!-- Content will be dynamically inserted here -->
+        </div>
+        <!-- Floating Back to Top Button -->
+        <button id="backToTopBtn" title="بازگشت به بالا" style="display:none; position:fixed; bottom:32px; left:32px; z-index:1000; background:#1e88e5; color:white; border:none; border-radius:50%; width:48px; height:48px; font-size:2rem; box-shadow:0 2px 8px rgba(0,0,0,0.2); cursor:pointer; transition:background 0.2s;">↑</button>
+        <!-- Relation Type and Explanation Section -->
+        <h3 style="color:var(--primary-color); margin-bottom:0.5rem; display:flex; align-items:center; gap:8px;">
+            ۴. نوع رابطه و توضیح
+            <span title="نوع رابطه بین دو بخش قانونی و توضیح آن" style="cursor:help; font-size:1.2rem; color:#00acc1;">ℹ️</span>
+        </h3>
+        <div class="relation-info">
+            <div id="relationTypeDisplay" style="margin-bottom: 0.5rem; padding: 0.5rem; background: var(--bg-color); border-radius: 8px; display: flex; align-items: center;">
+                <span id="relationTypeText"></span>
+                <button id="editRelationTypeBtn" class="edit-button" title="ویرایش نوع رابطه">✏️</button>
+            </div>
+            <div id="relationExplanationDisplay" style="margin-bottom: 0.5rem; padding: 0.5rem; background: var(--bg-color); border-radius: 8px; display: flex; align-items: center;">
+                <span id="relationExplanationText"></span>
+                <button id="editExplanationBtn" class="edit-button" title="ویرایش توضیح">✏️</button>
+            </div>
+        </div>
+        <!-- Save and Download Button -->
+        <div style="margin-top: 1rem; text-align: center;">
+            <button id="saveDownloadBtn" class="button button-primary" style="display: flex; align-items: center; gap: 8px; margin: 0 auto;">
+                <span>💾</span>
+                <span>ذخیره و دانلود</span>
+            </button>
+        </div>
+        <!-- Navigation Buttons (Bottom) -->
+        <div id="navButtonsBottom" class="nav-buttons beautiful-nav" style="justify-content:center; margin-top:0.5rem;">
+            <button id="backBtnBottom" class="button button-secondary beautiful-nav-btn" style="min-width:100px;" onclick="navigateHadith(-1)">
+                <span class="nav-icon">&#8592;</span>
+                <span>قبلی</span>
+            </button>
+            <button id="nextBtnBottom" class="button button-secondary beautiful-nav-btn" style="min-width:100px;" onclick="navigateHadith(1)">
+                <span>بعدی</span>
+                <span class="nav-icon">&#8594;</span>
+            </button>
+        </div>
+    </div>
+    <script>
+        // API Configuration - adjust this to match your backend URL
+        const API_BASE_URL = (() => {
+            // If running locally, use localhost:8000
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                return 'http://localhost:8000';
+            }
+            // For production, use the same domain with /api prefix or adjust as needed
+            // Option 1: Same domain, different port (if backend is on port 8000)
+            // return window.location.origin.replace(/:\d+$/, ':8000');
+            // Option 2: Same domain with /api prefix (if using reverse proxy)
+            return `${window.location.protocol}//${window.location.hostname}:8000`;
+        })();
+        
+        // Authentication state
+        let authToken = localStorage.getItem('authToken');
+        let currentUser = null;
+        
+        let sections = [];
+        let selectedHadithIndex = 0;
+        let uploadedFileName = "";
+        // Filter variables
+        let filteredSections = [];
+        
+        // Check authentication status on load
+        function checkAuthStatus() {
+            if (authToken) {
+                // Verify token is still valid by getting user info
+                fetch(`${API_BASE_URL}/api/user/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Invalid token');
+                    }
+                })
+                .then(user => {
+                    currentUser = user;
+                    updateAuthUI();
+                })
+                .catch(() => {
+                    // Token invalid, clear it
+                    authToken = null;
+                    localStorage.removeItem('authToken');
+                    updateAuthUI();
+                });
+            } else {
+                updateAuthUI();
+            }
+        }
+        
+        function updateAuthUI() {
+            const loginBtn = document.getElementById('loginBtn');
+            const userInfoContainer = document.getElementById('userInfoContainer');
+            const userInfoText = document.getElementById('userInfoText');
+            const loadSampleDataBtn = document.getElementById('loadSampleDataBtn');
+            
+            if (authToken && currentUser) {
+                loginBtn.style.display = 'none';
+                userInfoContainer.style.display = 'block';
+                userInfoText.textContent = `کاربر: ${currentUser.username}`;
+                loadSampleDataBtn.style.display = 'inline-block';
+            } else {
+                loginBtn.style.display = 'block';
+                userInfoContainer.style.display = 'none';
+                loadSampleDataBtn.style.display = 'none';
+            }
+        }
+        
+        // API helper functions
+        async function apiRequest(endpoint, options = {}) {
+            const url = `${API_BASE_URL}${endpoint}`;
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+            
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+            
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({ detail: 'خطا در ارتباط با سرور' }));
+                    throw new Error(error.detail || `HTTP error! status: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('API request error:', error);
+                throw error;
+            }
+        }
+        
+        // Load sample data
+        async function loadSampleData() {
+            try {
+                showToast('در حال بارگذاری...', 'در حال دریافت داده نمونه از سرور', 'success');
+                const response = await apiRequest('/api/sample-data');
+                const sampleData = response.data;
+                
+                if (!Array.isArray(sampleData) || sampleData.length === 0) {
+                    showToast('خطا', 'داده نمونه معتبر نیست.', 'error');
+                    return;
+                }
+                
+                sections = sampleData;
+                filteredSections = [...sampleData];
+                selectedHadithIndex = 0;
+                uploadedFileName = 'sample_data.json';
+                
+                document.getElementById('fileUploadOverlay').style.display = 'none';
+                setUIEnabled(true);
+                populateHadithSelector();
+                populateFilterOptions();
+                populateModalFilterOptions();
+                document.getElementById('hadithSelectorContainer').style.display = 'flex';
+                document.getElementById('filterSection').style.display = 'block';
+                document.getElementById('progressBarContainer').style.display = 'block';
+                document.getElementById('filterModal').style.display = 'flex';
+                document.getElementById('hadithDisplay').style.display = 'none';
+                document.getElementById('relationTypeDisplay').style.display = 'none';
+                document.getElementById('relationExplanationDisplay').style.display = 'none';
+                document.getElementById('navButtonsTop').style.display = 'none';
+                document.getElementById('navButtonsBottom').style.display = 'none';
+                updateNavButtons();
+                
+                // Save to local storage
+                localStorage.setItem('sections', JSON.stringify(sections));
+                
+                showToast('موفقیت', 'داده نمونه با موفقیت بارگذاری شد.', 'success');
+            } catch (error) {
+                showToast('خطا', `خطا در بارگذاری داده نمونه: ${error.message}`, 'error');
+            }
+        }
+        
+        // Save data to backend
+        async function saveDataToBackend() {
+            if (!authToken) {
+                return; // Not logged in, skip backend save
+            }
+            
+            try {
+                const modifiedSections = sections.map((section, index) => {
+                    if (editedSections[index]) {
+                        return { ...section, ...editedSections[index] };
+                    }
+                    return section;
+                });
+                
+                await apiRequest('/api/save-data', {
+                    method: 'POST',
+                    body: JSON.stringify({ data: modifiedSections })
+                });
+                
+                console.log('Data saved to backend successfully');
+            } catch (error) {
+                console.error('Error saving to backend:', error);
+                // Don't show error to user, as local save still works
+            }
+        }
+        function showToast(title, message, type = 'success') {
+            let toastContainer = document.getElementById('toastContainer');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toastContainer';
+                toastContainer.className = 'toast-container';
+                document.body.appendChild(toastContainer);
+            }
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icons = { success: '✅', error: '❌', warning: '⚠️' };
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type]}</span>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+            `;
+            toastContainer.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+        // Overlay logic and UI enable/disable
+        function setUIEnabled(enabled) {
+            const container = document.getElementById('mainContainer');
+            if (enabled) {
+                container.classList.remove('disabled-ui');
+                Array.from(container.querySelectorAll('input, select, button')).forEach(el => {
+                    if (!el.classList.contains('file-upload-label')) el.disabled = false;
+                });
+            } else {
+                container.classList.add('disabled-ui');
+                Array.from(container.querySelectorAll('input, select, button')).forEach(el => {
+                    if (!el.classList.contains('file-upload-label')) el.disabled = true;
+                });
+            }
+        }
+        document.getElementById('jsonFile').addEventListener('change', async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            uploadedFileName = file.name;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const raw = JSON.parse(e.target.result);
+                    if (!Array.isArray(raw) || raw.length === 0) {
+                        showToast('خطا', 'ساختار فایل JSON باید آرایه‌ای از بخش‌های قانونی باشد.', 'error');
+                        return;
+                    }
+                    sections = raw;
+                    filteredSections = [...raw]; // Initialize filtered sections with all data
+                    selectedHadithIndex = 0;
+                    document.getElementById('fileUploadOverlay').style.display = 'none';
+                    setUIEnabled(true);
+                    populateHadithSelector();
+                    populateFilterOptions(); // Populate filter options
+                    populateModalFilterOptions(); // Populate modal filter options
+                    document.getElementById('hadithSelectorContainer').style.display = 'flex';
+                    document.getElementById('filterSection').style.display = 'block'; // Show filter section
+                    document.getElementById('progressBarContainer').style.display = 'block';
+                    // Show filter modal instead of directly showing data
+                    document.getElementById('filterModal').style.display = 'flex';
+                    // Hide main content until filters are applied
+                    document.getElementById('hadithDisplay').style.display = 'none';
+                    document.getElementById('relationTypeDisplay').style.display = 'none';
+                    document.getElementById('relationExplanationDisplay').style.display = 'none';
+                    document.getElementById('navButtonsTop').style.display = 'none';
+                    document.getElementById('navButtonsBottom').style.display = 'none';
+                    updateNavButtons();
+                    
+                    // Save to local storage
+                    localStorage.setItem('sections', JSON.stringify(sections));
+                    
+                    // Save to backend if logged in
+                    await saveDataToBackend();
+                } catch (error) {
+                    showToast('خطا', 'خطا در پردازش فایل JSON. لطفاً یک فایل معتبر انتخاب کنید.', 'error');
+                    return;
+                }
+            };
+            reader.readAsText(file);
+        });
+        
+        // Overlay file input
+        document.getElementById('jsonFileOverlay').addEventListener('change', async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            uploadedFileName = file.name;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const raw = JSON.parse(e.target.result);
+                    if (!Array.isArray(raw) || raw.length === 0) {
+                        showToast('خطا', 'ساختار فایل JSON باید آرایه‌ای از بخش‌های قانونی باشد.', 'error');
+                        return;
+                    }
+                    sections = raw;
+                    filteredSections = [...raw]; // Initialize filtered sections with all data
+                    selectedHadithIndex = 0;
+                    document.getElementById('fileUploadOverlay').style.display = 'none';
+                    setUIEnabled(true);
+                    populateHadithSelector();
+                    populateFilterOptions(); // Populate filter options
+                    populateModalFilterOptions(); // Populate modal filter options
+                    document.getElementById('hadithSelectorContainer').style.display = 'flex';
+                    document.getElementById('filterSection').style.display = 'block'; // Show filter section
+                    document.getElementById('progressBarContainer').style.display = 'block';
+                    // Show filter modal instead of directly showing data
+                    document.getElementById('filterModal').style.display = 'flex';
+                    // Hide main content until filters are applied
+                    document.getElementById('hadithDisplay').style.display = 'none';
+                    document.getElementById('relationTypeDisplay').style.display = 'none';
+                    document.getElementById('relationExplanationDisplay').style.display = 'none';
+                    document.getElementById('navButtonsTop').style.display = 'none';
+                    document.getElementById('navButtonsBottom').style.display = 'none';
+                    updateNavButtons();
+                    
+                    // Save to local storage
+                    localStorage.setItem('sections', JSON.stringify(sections));
+                    
+                    // Save to backend if logged in
+                    await saveDataToBackend();
+                } catch (error) {
+                    showToast('خطا', 'خطا در پردازش فایل JSON. لطفاً یک فایل معتبر انتخاب کنید.', 'error');
+                    return;
+                }
+            };
+            reader.readAsText(file);
+        });
+        // Filter functions
+        function populateFilterOptions() {
+            // Populate Qanon filter options
+            const qanonSet = new Set();
+            sections.forEach(section => {
+                if (section.section_1_qanon) qanonSet.add(section.section_1_qanon);
+                if (section.section_2_qanon) qanonSet.add(section.section_2_qanon);
+            });
+            
+            const qanonFilter = document.getElementById('filterQanon');
+            // Clear existing options except the first one
+            while (qanonFilter.options.length > 1) {
+                qanonFilter.remove(1);
+            }
+            // Add new options
+            Array.from(qanonSet).sort().forEach(qanon => {
+                const option = document.createElement('option');
+                option.value = qanon;
+                option.textContent = qanon;
+                qanonFilter.appendChild(option);
+            });
+            
+            // Populate Relation Type filter options
+            const relationTypeSet = new Set();
+            sections.forEach(section => {
+                if (section.relation_type) relationTypeSet.add(section.relation_type);
+            });
+            
+            const relationTypeFilter = document.getElementById('filterRelationType');
+            // Clear existing options except the first one
+            while (relationTypeFilter.options.length > 1) {
+                relationTypeFilter.remove(1);
+            }
+            // Add new options
+            Array.from(relationTypeSet).sort().forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                relationTypeFilter.appendChild(option);
+            });
+        }
+        
+        function populateModalFilterOptions() {
+            // Populate Qanon filter options
+            const qanonSet = new Set();
+            sections.forEach(section => {
+                if (section.section_1_qanon) qanonSet.add(section.section_1_qanon);
+                if (section.section_2_qanon) qanonSet.add(section.section_2_qanon);
+            });
+            
+            const qanonFilter = document.getElementById('filterModalQanon');
+            // Clear existing options
+            while (qanonFilter.options.length > 0) {
+                qanonFilter.remove(0);
+            }
+            // Add new options
+            Array.from(qanonSet).sort().forEach(qanon => {
+                const option = document.createElement('option');
+                option.value = qanon;
+                option.textContent = qanon;
+                qanonFilter.appendChild(option);
+            });
+            
+            // Populate Relation Type filter options
+            const relationTypeSet = new Set();
+            sections.forEach(section => {
+                if (section.relation_type) relationTypeSet.add(section.relation_type);
+            });
+            
+            const relationTypeFilter = document.getElementById('filterModalRelationType');
+            // Clear existing options
+            while (relationTypeFilter.options.length > 0) {
+                relationTypeFilter.remove(0);
+            }
+            // Add new options
+            Array.from(relationTypeSet).sort().forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                relationTypeFilter.appendChild(option);
+            });
+        }
+        
+        function applyFilters() {
+            // Get selected filter values
+            const hasRelationYes = document.getElementById('filterHasRelationYes').checked;
+            const hasRelationNo = document.getElementById('filterHasRelationNo').checked;
+            
+            const selectedQanons = Array.from(document.getElementById('filterQanon').selectedOptions)
+                .map(option => option.value)
+                .filter(value => value !== '');
+                
+            const selectedRelationTypes = Array.from(document.getElementById('filterRelationType').selectedOptions)
+                .map(option => option.value)
+                .filter(value => value !== '');
+            
+            // Apply filters
+            filteredSections = sections.filter(section => {
+                // Has relationship filter
+                if (hasRelationYes || hasRelationNo) { // Removed hasRelationUnknown
+                    const hasRelationValue = section.has_relationship;
+                    let matches = false;
+                    
+                    if (hasRelationYes && hasRelationValue === true) matches = true;
+                    if (hasRelationNo && hasRelationValue === false) matches = true;
+                    // Removed check for hasRelationUnknown
+                    
+                    if (!matches) return false;
+                }
+                
+                // Qanon filter
+                if (selectedQanons.length > 0) {
+                    const section1Qanon = section.section_1_qanon || '';
+                    const section2Qanon = section.section_2_qanon || '';
+                    let matches = false;
+                    
+                    selectedQanons.forEach(qanon => {
+                        if (section1Qanon.includes(qanon) || section2Qanon.includes(qanon)) {
+                            matches = true;
+                        }
+                    });
+                    
+                    if (!matches) return false;
+                }
+                
+                // Relation type filter
+                if (selectedRelationTypes.length > 0) {
+                    const relationType = section.relation_type || '';
+                    let matches = false;
+                    
+                    selectedRelationTypes.forEach(type => {
+                        if (relationType.includes(type)) {
+                            matches = true;
+                        }
+                    });
+                    
+                    if (!matches) return false;
+                }
+                
+                return true;
+            });
+            
+            // Update UI
+            selectedHadithIndex = 0;
+            populateHadithSelector();
+            displayHadith();
+            updateNavButtons();
+            
+            showToast('موفقیت', 'فیلترها با موفقیت اعمال شدند.', 'success');
+        }
+        
+        function clearFilters() {
+            // Reset filter checkboxes
+            document.getElementById('filterHasRelationYes').checked = false;
+            document.getElementById('filterHasRelationNo').checked = false;
+            
+            // Reset filter selects
+            document.getElementById('filterQanon').selectedIndex = -1;
+            document.getElementById('filterRelationType').selectedIndex = -1;
+            
+            // Reset filtered sections to all data
+            filteredSections = [...sections];
+            
+            // Update UI
+            selectedHadithIndex = 0;
+            populateHadithSelector();
+            displayHadith();
+            updateNavButtons();
+            
+            showToast('موفقیت', 'فیلترها حذف شدند.', 'success');
+        }
+        
+        // Modal filter functions
+        function applyModalFilters() {
+            // Get selected filter values from modal
+            const hasRelationYes = document.getElementById('filterModalHasRelationYes').checked;
+            const hasRelationNo = document.getElementById('filterModalHasRelationNo').checked;
+            
+            const selectedQanons = Array.from(document.getElementById('filterModalQanon').selectedOptions)
+                .map(option => option.value);
+                
+            const selectedRelationTypes = Array.from(document.getElementById('filterModalRelationType').selectedOptions)
+                .map(option => option.value);
+            
+            // Apply filters
+            filteredSections = sections.filter(section => {
+                // Has relationship filter
+                if (hasRelationYes || hasRelationNo) { // Removed hasRelationUnknown
+                    const hasRelationValue = section.has_relationship;
+                    let matches = false;
+                    
+                    if (hasRelationYes && hasRelationValue === true) matches = true;
+                    if (hasRelationNo && hasRelationValue === false) matches = true;
+                    // Removed check for hasRelationUnknown
+                    
+                    if (!matches) return false;
+                }
+                
+                // Qanon filter
+                if (selectedQanons.length > 0) {
+                    const section1Qanon = section.section_1_qanon || '';
+                    const section2Qanon = section.section_2_qanon || '';
+                    let matches = false;
+                    
+                    selectedQanons.forEach(qanon => {
+                        if (section1Qanon.includes(qanon) || section2Qanon.includes(qanon)) {
+                            matches = true;
+                        }
+                    });
+                    
+                    if (!matches) return false;
+                }
+                
+                // Relation type filter
+                if (selectedRelationTypes.length > 0) {
+                    const relationType = section.relation_type || '';
+                    let matches = false;
+                    
+                    selectedRelationTypes.forEach(type => {
+                        if (relationType.includes(type)) {
+                            matches = true;
+                        }
+                    });
+                    
+                    if (!matches) return false;
+                }
+                
+                return true;
+            });
+            
+            // Update regular filter controls to match modal selections
+            document.getElementById('filterHasRelationYes').checked = hasRelationYes;
+            document.getElementById('filterHasRelationNo').checked = hasRelationNo;
+            
+            // Update Qanon filter selection
+            const qanonSelect = document.getElementById('filterQanon');
+            Array.from(qanonSelect.options).forEach(option => {
+                option.selected = selectedQanons.includes(option.value);
+            });
+            
+            // Update Relation Type filter selection
+            const relationTypeSelect = document.getElementById('filterRelationType');
+            Array.from(relationTypeSelect.options).forEach(option => {
+                option.selected = selectedRelationTypes.includes(option.value);
+            });
+            
+            // Hide modal and show data
+            document.getElementById('filterModal').style.display = 'none';
+            document.getElementById('hadithDisplay').style.display = 'block';
+            document.getElementById('relationTypeDisplay').style.display = 'block';
+            document.getElementById('relationExplanationDisplay').style.display = 'block';
+            document.getElementById('navButtonsTop').style.display = 'flex';
+            document.getElementById('navButtonsBottom').style.display = 'flex';
+            
+            // Hide filter section and show filter button
+            document.getElementById('filterSection').style.display = 'none';
+            document.getElementById('filterButtonSection').style.display = 'block';
+            
+            // Update UI
+            selectedHadithIndex = 0;
+            populateHadithSelector();
+            displayHadith();
+            updateNavButtons();
+            
+            showToast('موفقیت', 'فیلترها با موفقیت اعمال شدند.', 'success');
+        }
+        
+        function skipFilters() {
+            // Hide modal and show all data
+            document.getElementById('filterModal').style.display = 'none';
+            document.getElementById('hadithDisplay').style.display = 'block';
+            document.getElementById('relationTypeDisplay').style.display = 'block';
+            document.getElementById('relationExplanationDisplay').style.display = 'block';
+            document.getElementById('navButtonsTop').style.display = 'flex';
+            document.getElementById('navButtonsBottom').style.display = 'flex';
+            
+            // Hide filter section and show filter button
+            document.getElementById('filterSection').style.display = 'none';
+            document.getElementById('filterButtonSection').style.display = 'block';
+            
+            // Reset filtered sections to all data
+            filteredSections = [...sections];
+            
+            // Reset regular filter controls
+            document.getElementById('filterHasRelationYes').checked = false;
+            document.getElementById('filterHasRelationNo').checked = false;
+            document.getElementById('filterQanon').selectedIndex = -1;
+            document.getElementById('filterRelationType').selectedIndex = -1;
+            
+            // Update UI
+            selectedHadithIndex = 0;
+            populateHadithSelector();
+            displayHadith();
+            updateNavButtons();
+        }
+        
+        function navigateHadith(direction) {
+            if (!sections.length) return;
+            let newIndex = selectedHadithIndex + direction;
+            if (newIndex < 0) newIndex = 0;
+            if (newIndex >= sections.length) newIndex = sections.length - 1;
+            if (newIndex !== selectedHadithIndex) {
+                selectedHadithIndex = newIndex;
+                populateHadithSelector();
+                displayHadith();
+            }
+            updateNavButtons();
+        }
+        function updateNavButtons() {
+            const backBtnTop = document.getElementById('prevHadithBtn');
+            const nextBtnTop = document.getElementById('nextHadithBtn');
+            const backBtnBottom = document.getElementById('backBtnBottom');
+            const nextBtnBottom = document.getElementById('nextBtnBottom');
+            if (!sections.length) {
+                [backBtnTop, nextBtnTop, backBtnBottom, nextBtnBottom].forEach(btn => { if (btn) btn.disabled = true; });
+                return;
+            }
+            const atStart = selectedHadithIndex === 0;
+            const atEnd = selectedHadithIndex === sections.length - 1;
+            if (backBtnTop) backBtnTop.disabled = atStart;
+            if (nextBtnTop) nextBtnTop.disabled = atEnd;
+            if (backBtnBottom) backBtnBottom.disabled = atStart;
+            if (nextBtnBottom) nextBtnBottom.disabled = atEnd;
+        }
+        // Modify populateHadithSelector to use filteredSections
+        function populateHadithSelector() {
+            const selector = document.getElementById('hadithSelector');
+            selector.innerHTML = '';
+            filteredSections.forEach((section, i) => {
+                const option = document.createElement('option');
+                option.value = i;
+                // For new format, use section IDs
+                const section1Id = section.section_1_id || `بخش ۱`;
+                const section2Id = section.section_2_id || `بخش ۲`;
+                const hasRelation = section.has_relationship === true ? ' (دارای رابطه)' : 
+                                  section.has_relationship === false ? '' : 
+                                  ' (رابطه نامشخص)';
+                option.textContent = `مقایسه ${section1Id} و ${section2Id}${hasRelation}`;
+                selector.appendChild(option);
+            });
+            selector.value = selectedHadithIndex;
+            selector.onchange = function() {
+                selectedHadithIndex = parseInt(this.value, 10);
+                displayHadith();
+                updateNavButtons();
+            };
+            updateNavButtons();
+        }
+        // Modify getCurrentHadith to use filteredSections
+        function getCurrentHadith() {
+            return filteredSections[selectedHadithIndex] || null;
+        }
+        function displayHadith() {
+            try {
+                
+                const section = getCurrentSectionWithEdits();
+                console.log('Displaying section at index', selectedHadithIndex, ':', section);
+                const hadithContainer = document.getElementById('hadithDisplay');
+                hadithContainer.innerHTML = '';
+                if (!section) {
+                    hadithContainer.innerHTML = '<div style="color:#f44336;">هیچ بخشی برای نمایش وجود ندارد.</div>';
+                    return;
+                }
+                // Collapsible Section 1 Content
+                const section1Div = document.createElement('div');
+                section1Div.style.marginBottom = '0.5rem';
+                const section1Header = document.createElement('button');
+                section1Header.className = 'collapsible-header';
+                section1Header.style = 'width:100%; text-align:right; background:#e3f2fd; color:#1565c0; border:none; border-radius:8px; padding:0.7rem 1rem; font-size:1.1rem; margin-bottom:0.2rem; cursor:pointer; display:flex; align-items:center; gap:8px;';
+                const section1Qanon = section.section_1_qanon || '';
+                const section1HeaderContent = section1Qanon ? 
+                    `<span>متن بخش اول (${section1Qanon})</span><span class="arrow">▲</span>` : 
+                    '<span>متن بخش اول</span><span class="arrow">▲</span>';
+                section1Header.innerHTML = section1HeaderContent;
+                const section1Content = document.createElement('div');
+                section1Content.className = 'collapsible-content';
+                section1Content.style = 'padding:1rem; background:var(--bg-color); border-radius:8px; font-size:1.1rem; line-height:1.8; display:none;';
+                // Convert \n to <br> for proper line breaks in HTML
+                section1Content.innerHTML = (section.section_1_content || '(متن بخش اول موجود نیست)').replace(/\n/g, '<br>');
+                section1Div.appendChild(section1Header);
+                section1Div.appendChild(section1Content);
+                hadithContainer.appendChild(section1Div);
+                // Collapsible Section 1 Rules
+                const section1RulesDiv = document.createElement('div');
+                section1RulesDiv.style.marginBottom = '0.5rem';
+                const section1RulesHeader = document.createElement('button');
+                section1RulesHeader.className = 'collapsible-header';
+                section1RulesHeader.style = 'width:100%; text-align:right; background:#e3f2fd; color:#1e88e5; border:none; border-radius:8px; padding:0.7rem 1rem; font-size:1.1rem; margin-bottom:0.2rem; cursor:pointer; display:flex; align-items:center; gap:8px;';
+                section1RulesHeader.innerHTML = '<span>احکام بخش اول</span><span class="arrow">▲</span>';
+                const section1RulesContent = document.createElement('div');
+                section1RulesContent.className = 'collapsible-content';
+                section1RulesContent.style = 'padding:1rem; background:var(--bg-color); border-radius:8px; font-size:1.2rem; color:var(--primary-color); line-height:1.8; display:none;';
+                // Convert \n to <br> for proper line breaks in HTML
+                section1RulesContent.innerHTML = (section.section_1_rules || '').replace(/\n/g, '<br>');
+                section1RulesDiv.appendChild(section1RulesHeader);
+                section1RulesDiv.appendChild(section1RulesContent);
+                hadithContainer.appendChild(section1RulesDiv);
+                
+                // Collapsible Section 2 Content
+                const section2Div = document.createElement('div');
+                section2Div.style.marginBottom = '0.5rem';
+                const section2Header = document.createElement('button');
+                section2Header.className = 'collapsible-header';
+                section2Header.style = 'width:100%; text-align:right; background:#e3f2fd; color:#1565c0; border:none; border-radius:8px; padding:0.7rem 1rem; font-size:1.1rem; margin-bottom:0.2rem; cursor:pointer; display:flex; align-items:center; gap:8px;';
+                const section2Qanon = section.section_2_qanon || '';
+                const section2HeaderContent = section2Qanon ? 
+                    `<span>متن بخش دوم (${section2Qanon})</span><span class="arrow">▲</span>` : 
+                    '<span>متن بخش دوم</span><span class="arrow">▲</span>';
+                section2Header.innerHTML = section2HeaderContent;
+                const section2Content = document.createElement('div');
+                section2Content.className = 'collapsible-content';
+                section2Content.style = 'padding:1rem; background:var(--bg-color); border-radius:8px; font-size:1.1rem; line-height:1.8; display:none;';
+                // Convert \n to <br> for proper line breaks in HTML
+                section2Content.innerHTML = (section.section_2_content || '(متن بخش دوم موجود نیست)').replace(/\n/g, '<br>');
+                section2Div.appendChild(section2Header);
+                section2Div.appendChild(section2Content);
+                hadithContainer.appendChild(section2Div);
+                
+                // Collapsible Section 2 Rules
+                const section2RulesDiv = document.createElement('div');
+                section2RulesDiv.style.marginBottom = '0.5rem';
+                const section2RulesHeader = document.createElement('button');
+                section2RulesHeader.className = 'collapsible-header';
+                section2RulesHeader.style = 'width:100%; text-align:right; background:#e3f2fd; color:#1e88e5; border:none; border-radius:8px; padding:0.7rem 1rem; font-size:1.1rem; margin-bottom:0.2rem; cursor:pointer; display:flex; align-items:center; gap:8px;';
+                section2RulesHeader.innerHTML = '<span>احکام بخش دوم</span><span class="arrow">▲</span>';
+                const section2RulesContent = document.createElement('div');
+                section2RulesContent.className = 'collapsible-content';
+                section2RulesContent.style = 'padding:1rem; background:var(--bg-color); border-radius:8px; font-size:1.2rem; color:var(--primary-color); line-height:1.8; display:none;';
+                // Convert \n to <br> for proper line breaks in HTML
+                section2RulesContent.innerHTML = (section.section_2_rules || '').replace(/\n/g, '<br>');
+                section2RulesDiv.appendChild(section2RulesHeader);
+                section2RulesDiv.appendChild(section2RulesContent);
+                hadithContainer.appendChild(section2RulesDiv);
+                
+                // Display has_relationship value prominently
+                const hasRelationshipDiv = document.createElement('div');
+                hasRelationshipDiv.style.marginBottom = '0.5rem';
+                hasRelationshipDiv.style.padding = '1rem';
+                hasRelationshipDiv.style.borderRadius = '8px';
+                hasRelationshipDiv.style.fontSize = '1.1rem';
+                hasRelationshipDiv.style.fontWeight = 'bold';
+                hasRelationshipDiv.style.textAlign = 'center';
+                
+                if (section.has_relationship === true) {
+                    hasRelationshipDiv.style.background = '#e8f5e9'; // Light green
+                    hasRelationshipDiv.style.color = '#2e7d32'; // Dark green
+                    hasRelationshipDiv.textContent = 'دارای رابطه: بله';
+                } else if (section.has_relationship === false) {
+                    hasRelationshipDiv.style.background = '#ffebee'; // Light red
+                    hasRelationshipDiv.style.color = '#c62828'; // Dark red
+                    hasRelationshipDiv.textContent = 'دارای رابطه: خیر';
+                } else {
+                    hasRelationshipDiv.style.background = '#fff3e0'; // Light orange
+                    hasRelationshipDiv.style.color = '#ef6c00'; // Dark orange
+                    hasRelationshipDiv.textContent = 'دارای رابطه: نامشخص';
+                }
+                
+                hadithContainer.appendChild(hasRelationshipDiv);
+                
+                // Show relation_type and explanation in dedicated display areas
+                const relationTypeText = document.getElementById('relationTypeText');
+                const relationExplanationText = document.getElementById('relationExplanationText');
+                
+                if (relationTypeText) {
+                    relationTypeText.textContent = section.relation_type ? `نوع رابطه: ${section.relation_type}` : 'نوع رابطه: -';
+                }
+                
+                if (relationExplanationText) {
+                    relationExplanationText.textContent = section.explanation ? `توضیح: ${section.explanation}` : 'توضیح: -';
+                }
+                
+                // Collapsible Relationship Analysis
+                const relationshipDiv = document.createElement('div');
+                relationshipDiv.style.marginBottom = '0.5rem';
+                const relationshipHeader = document.createElement('button');
+                relationshipHeader.className = 'collapsible-header';
+                relationshipHeader.style = 'width:100%; text-align:right; background:#f3e5f5; color:#7b1fa2; border:none; border-radius:8px; padding:0.7rem 1rem; font-size:1.1rem; margin-bottom:0.2rem; cursor:pointer; display:flex; align-items:center; gap:8px; direction:rtl;';
+                relationshipHeader.innerHTML = '<span>تحلیل رابطه</span><span class="arrow">▲</span>';
+                const relationshipContent = document.createElement('div');
+                relationshipContent.className = 'collapsible-content';
+                relationshipContent.style = 'padding:1rem; background:var(--bg-color); border-radius:8px; font-size:1.1rem; line-height:1.8; color:#333; direction:rtl; text-align:right; display:none;';
+                
+                // Create content for relationship analysis including relation_type and explanation
+                let relationshipText = '';
+                if (section.reason) {
+                    relationshipText += `دلیل: ${section.reason}`;
+                }
+                if (!relationshipText) {
+                    relationshipText = '(تحلیل رابطه موجود نیست)';
+                }
+                
+                // Convert \n to <br> for proper line breaks in HTML
+                relationshipContent.innerHTML = relationshipText.replace(/\n/g, '<br>');
+                relationshipDiv.appendChild(relationshipHeader);
+                relationshipDiv.appendChild(relationshipContent);
+                hadithContainer.appendChild(relationshipDiv);
+                
+                // Collapsible logic
+                [section1Header, section1RulesHeader, section2Header, section2RulesHeader, relationshipHeader].forEach((header, idx) => {
+                    header.addEventListener('click', function() {
+                        const content = this.nextElementSibling;
+                        const arrow = this.querySelector('.arrow');
+                        if (content.style.display === 'none') {
+                            content.style.display = '';
+                            arrow.textContent = '▼';
+                        } else {
+                            content.style.display = 'none';
+                            arrow.textContent = '▲';
+                        }
+                    });
+                });
+            } catch (err) {
+                console.error('Error in displayHadith:', err);
+                const hadithContainer = document.getElementById('hadithDisplay');
+                hadithContainer.innerHTML = '<div style="color:#f44336;">خطا در نمایش داده‌ها. لطفاً فایل را بررسی کنید یا با پشتیبانی تماس بگیرید.</div>';
+            }
+            updateNavButtons();
+            // Update counter and progress bar
+            const counter = document.getElementById('hadithCounter');
+            if (counter && filteredSections.length) {
+                counter.textContent = `بخش ${selectedHadithIndex+1} از ${filteredSections.length}`;
+            }
+            const progressBar = document.getElementById('progressBar');
+            if (progressBar && filteredSections.length) {
+                progressBar.style.width = `${((selectedHadithIndex+1)/filteredSections.length)*100}%`;
+            }
+        }
+        // On load, show overlay and disable UI
+        window.addEventListener('DOMContentLoaded', function() {
+            checkAuthStatus();
+            setUIEnabled(false);
+            document.getElementById('fileUploadOverlay').style.display = 'flex';
+            
+            // Login modal handlers
+            document.getElementById('loginBtn').addEventListener('click', function() {
+                document.getElementById('loginModal').style.display = 'flex';
+            });
+            
+            document.getElementById('closeLoginModal').addEventListener('click', function() {
+                document.getElementById('loginModal').style.display = 'none';
+                document.getElementById('loginError').style.display = 'none';
+            });
+            
+            document.getElementById('loginModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.style.display = 'none';
+                    document.getElementById('loginError').style.display = 'none';
+                }
+            });
+            
+            document.getElementById('submitLogin').addEventListener('click', handleLogin);
+            document.getElementById('submitRegister').addEventListener('click', handleRegister);
+            
+            // Allow Enter key to submit login
+            document.getElementById('loginPassword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    handleLogin();
+                }
+            });
+            
+            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+            
+            // Load sample data button
+            document.getElementById('loadSampleDataBtn').addEventListener('click', loadSampleData);
+            // Fix: Add event listeners for top navigation buttons
+            document.getElementById('prevHadithBtn').addEventListener('click', function() {
+                navigateHadith(-1);
+            });
+            document.getElementById('nextHadithBtn').addEventListener('click', function() {
+                navigateHadith(1);
+            });
+            
+            // Add event listeners for filter buttons
+            document.getElementById('applyFiltersBtn').addEventListener('click', applyFilters);
+            document.getElementById('clearFiltersBtn').addEventListener('click', clearFilters);
+            document.getElementById('changeFiltersBtn').addEventListener('click', function() {
+                // Pre-populate modal with current filter values
+                document.getElementById('filterModalHasRelationYes').checked = document.getElementById('filterHasRelationYes').checked;
+                document.getElementById('filterModalHasRelationNo').checked = document.getElementById('filterHasRelationNo').checked;
+                
+                // Pre-select Qanon values
+                const qanonSelect = document.getElementById('filterQanon');
+                const modalQanonSelect = document.getElementById('filterModalQanon');
+                Array.from(modalQanonSelect.options).forEach(option => {
+                    option.selected = Array.from(qanonSelect.selectedOptions).some(selected => selected.value === option.value);
+                });
+                
+                // Pre-select Relation Type values
+                const relationTypeSelect = document.getElementById('filterRelationType');
+                const modalRelationTypeSelect = document.getElementById('filterModalRelationType');
+                Array.from(modalRelationTypeSelect.options).forEach(option => {
+                    option.selected = Array.from(relationTypeSelect.selectedOptions).some(selected => selected.value === option.value);
+                });
+                
+                // Show modal
+                document.getElementById('filterModal').style.display = 'flex';
+            });
+            
+            // Add event listeners for modal filter buttons
+            document.getElementById('applyModalFiltersBtn').addEventListener('click', applyModalFilters);
+            document.getElementById('skipFiltersBtn').addEventListener('click', skipFilters);
+            
+            // Add event listeners for edit buttons
+            document.getElementById('editRelationTypeBtn').addEventListener('click', function() {
+                startEditing('relation_type');
+            });
+            
+            document.getElementById('editExplanationBtn').addEventListener('click', function() {
+                startEditing('explanation');
+            });
+            
+            // Add event listener for save and download button
+            document.getElementById('saveDownloadBtn').addEventListener('click', downloadModifiedData);
+        });
+        document.getElementById('darkModeToggle').addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            document.getElementById('darkModeIcon').textContent = isDarkMode ? '☀️' : '🌙';
+            localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
+        });
+        window.onload = function() {
+            if (localStorage.getItem('darkMode') === 'enabled') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkModeIcon').textContent = '☀️';
+            }
+        }
+        // Floating Back to Top Button logic
+        const backToTopBtn = document.getElementById('backToTopBtn');
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 200) {
+                backToTopBtn.style.display = 'block';
+            } else {
+                backToTopBtn.style.display = 'none';
+            }
+        });
+        backToTopBtn.onclick = function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+        // Guide Modal logic
+        document.getElementById('guideBtn').onclick = function() {
+            document.getElementById('guideModal').style.display = 'flex';
+        };
+        document.getElementById('closeGuideModal').onclick = function() {
+            document.getElementById('guideModal').style.display = 'none';
+        };
+        document.getElementById('guideModal').addEventListener('click', function(e) {
+            if (e.target === this) this.style.display = 'none';
+        });
+        
+        // Add editing functionality
+        let editedSections = {}; // To cache changes
+        
+        // Function to get current section with edits applied
+        function getCurrentSectionWithEdits() {
+            const section = getCurrentHadith();
+            if (!section) return null;
+            
+            // Apply cached edits if they exist
+            const sectionIndex = selectedHadithIndex;
+            if (editedSections[sectionIndex]) {
+                return { ...section, ...editedSections[sectionIndex] };
+            }
+            
+            return section;
+        }
+        
+        // Function to start editing a field
+        function startEditing(field) {
+            const section = getCurrentSectionWithEdits();
+            if (!section) return;
+            
+            const displayElement = field === 'relation_type' ? 
+                document.getElementById('relationTypeDisplay') : 
+                document.getElementById('relationExplanationDisplay');
+                
+            const textElement = field === 'relation_type' ? 
+                document.getElementById('relationTypeText') : 
+                document.getElementById('relationExplanationText');
+                
+            const editButton = field === 'relation_type' ? 
+                document.getElementById('editRelationTypeBtn') : 
+                document.getElementById('editExplanationBtn');
+            
+            // Save current text
+            const currentText = section[field] || '';
+            
+            // Create input field
+            let input;
+            if (field === 'explanation') {
+                // Use textarea for explanation to handle multi-line text
+                input = document.createElement('textarea');
+                input.className = 'edit-input';
+                input.value = currentText;
+                input.style.flex = '1';
+                input.style.width = '1000px';
+                input.style.height = '250px';
+                input.style.padding = '10px';
+                input.style.fontFamily = 'inherit';
+            } else {
+                // Use regular input for relation_type
+                input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'edit-input';
+                input.value = currentText;
+                input.style.flex = '1';
+                input.style.width = '1000px';
+            }
+            
+            // Create save button
+            const saveButton = document.createElement('button');
+            saveButton.className = 'save-edit';
+            saveButton.innerHTML = '✓';
+            saveButton.title = 'ذخیره';
+            
+            // Create cancel button
+            const cancelButton = document.createElement('button');
+            cancelButton.className = 'cancel-edit';
+            cancelButton.innerHTML = '✕';
+            cancelButton.title = 'لغو';
+            
+            // Create actions container
+            const actionsContainer = document.createElement('div');
+            actionsContainer.className = 'edit-actions';
+            actionsContainer.appendChild(saveButton);
+            actionsContainer.appendChild(cancelButton);
+            
+            // Clear display element and add input and buttons
+            displayElement.innerHTML = '';
+            displayElement.appendChild(input);
+            displayElement.appendChild(actionsContainer);
+            
+            // Focus input
+            input.focus();
+            
+            // Save handler
+            saveButton.addEventListener('click', function() {
+                const newValue = input.value.trim();
+                
+                // Cache the edit
+                const sectionIndex = selectedHadithIndex;
+                if (!editedSections[sectionIndex]) {
+                    editedSections[sectionIndex] = {};
+                }
+                editedSections[sectionIndex][field] = newValue || null;
+                
+                // Update display
+                finishEditing(field, newValue);
+                
+                showToast('موفقیت', 'تغییرات با موفقیت ذخیره شد.', 'success');
+            });
+            
+            // Cancel handler
+            cancelButton.addEventListener('click', function() {
+                finishEditing(field, currentText);
+            });
+            
+            // Also save on Enter key (Ctrl+Enter for textarea)
+            input.addEventListener('keydown', function(e) {
+                if (field === 'explanation' && e.key === 'Enter' && e.ctrlKey) {
+                    // For textarea, use Ctrl+Enter to save
+                    saveButton.click();
+                } else if (field !== 'explanation' && e.key === 'Enter') {
+                    // For input, use Enter to save
+                    saveButton.click();
+                } else if (e.key === 'Escape') {
+                    cancelButton.click();
+                }
+            });
+        }
+        
+        // Function to finish editing and restore display
+        function finishEditing(field, value) {
+            const displayElement = field === 'relation_type' ? 
+                document.getElementById('relationTypeDisplay') : 
+                document.getElementById('relationExplanationDisplay');
+                
+            // Create new text element
+            const newTextElement = document.createElement('span');
+            newTextElement.id = field === 'relation_type' ? 'relationTypeText' : 'relationExplanationText';
+            
+            // Update text
+            const displayText = value ? 
+                (field === 'relation_type' ? `نوع رابطه: ${value}` : `توضیح: ${value}`) : 
+                (field === 'relation_type' ? 'نوع رابطه: -' : 'توضیح: -');
+                
+            newTextElement.textContent = displayText;
+            
+            // Create new edit button
+            const newEditButton = document.createElement('button');
+            newEditButton.id = field === 'relation_type' ? 'editRelationTypeBtn' : 'editExplanationBtn';
+            newEditButton.className = 'edit-button';
+            newEditButton.title = field === 'relation_type' ? 'ویرایش نوع رابطه' : 'ویرایش توضیح';
+            newEditButton.innerHTML = '✏️';
+            
+            // Add event listener to new edit button
+            newEditButton.addEventListener('click', function() {
+                startEditing(field);
+            });
+            
+            // Clear display element and restore original structure
+            displayElement.innerHTML = '';
+            displayElement.appendChild(newTextElement);
+            displayElement.appendChild(newEditButton);
+        }
+        
+        // Function to download modified data
+        async function downloadModifiedData() {
+            // Create a copy of the original data with edits applied
+            const modifiedSections = sections.map((section, index) => {
+                if (editedSections[index]) {
+                    return { ...section, ...editedSections[index], is_edited: true };
+                }
+                return section;
+            });
+            
+            // Save to local storage
+            localStorage.setItem('sections', JSON.stringify(modifiedSections));
+            
+            // Save to backend if logged in
+            await saveDataToBackend();
+            
+            // Create filename with current timestamp
+            const now = new Date();
+            const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+            const fileName = uploadedFileName ? 
+                `${uploadedFileName.replace('.json', '')}_${timestamp}.json` : 
+                `modified_data_${timestamp}.json`;
+            
+            // Create and download file
+            const dataStr = JSON.stringify(modifiedSections, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showToast('موفقیت', `فایل با موفقیت دانلود شد و در پایگاه داده ذخیره شد: ${fileName}`, 'success');
+        }
+        
+        // Login/Register handlers
+        async function handleLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const errorDiv = document.getElementById('loginError');
+            
+            if (!username || !password) {
+                errorDiv.textContent = 'لطفاً نام کاربری و رمز عبور را وارد کنید.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await apiRequest('/api/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ username, password })
+                });
+                
+                authToken = response.access_token;
+                currentUser = { username: response.username, id: response.user_id };
+                localStorage.setItem('authToken', authToken);
+                
+                document.getElementById('loginModal').style.display = 'none';
+                document.getElementById('loginUsername').value = '';
+                document.getElementById('loginPassword').value = '';
+                errorDiv.style.display = 'none';
+                
+                updateAuthUI();
+                showToast('موفقیت', 'با موفقیت وارد شدید.', 'success');
+            } catch (error) {
+                errorDiv.textContent = error.message || 'نام کاربری یا رمز عبور اشتباه است.';
+                errorDiv.style.display = 'block';
+            }
+        }
+        
+        async function handleRegister() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const errorDiv = document.getElementById('loginError');
+            
+            if (!username || !password) {
+                errorDiv.textContent = 'لطفاً نام کاربری و رمز عبور را وارد کنید.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            if (password.length < 6) {
+                errorDiv.textContent = 'رمز عبور باید حداقل ۶ کاراکتر باشد.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            try {
+                await apiRequest('/api/register', {
+                    method: 'POST',
+                    body: JSON.stringify({ username, password })
+                });
+                
+                // After registration, automatically login
+                await handleLogin();
+            } catch (error) {
+                errorDiv.textContent = error.message || 'خطا در ثبت‌نام. ممکن است نام کاربری تکراری باشد.';
+                errorDiv.style.display = 'block';
+            }
+        }
+        
+        function handleLogout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('authToken');
+            updateAuthUI();
+            showToast('موفقیت', 'با موفقیت خارج شدید.', 'success');
+        }
+        
+
+    </script>
+</body>
+</html>
+tanghih_editing.html
