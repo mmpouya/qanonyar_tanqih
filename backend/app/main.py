@@ -8,9 +8,9 @@ from datetime import datetime
 import json
 import os
 
-from database import SessionLocal, engine, Base
-from models import User, SectionData
-from auth import verify_token, create_access_token, get_password_hash, verify_password
+from app.core.database import SessionLocal, engine, Base
+from app.models import User, SectionData
+from app.core.security import verify_token, create_access_token, get_password_hash, verify_password
 
 # Create tables
 Base.metadata.create_all(bind=engine)

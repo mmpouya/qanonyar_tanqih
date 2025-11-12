@@ -1,12 +1,75 @@
-all_props_with_entity_Tawhid_propgraph.json
-fixing_data.py
-fixed_data.json
-fixed_data_2.json
-raw_props_graph_Tawhid_propgraph.json
-raw_Al-Elm_propGraph_1.json
-fixed_data_Kitab_Al_Elm.json
-fixing_structure.py
-# script.js
-Kitab_Al_Elm_modelling.json
-raw_PropGraphs_Al_Elm_turtle.json
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Node (if using npm)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+data/samples/*.json
+!data/samples/.gitkeep

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سامانه مشاهده و ویرایش داده‌ها</title>
+    <!-- Vazirmatn font import -->
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="src/css/styles.css">
+    <style>
+        * {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        
+        .landing-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #1e88e5, #00acc1);
+            background-size: cover;
+        }
+        
+        .landing-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            padding: 3rem 4rem;
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+            direction: rtl;
+        }
+        
+        .landing-title {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .landing-subtitle {
+            color: var(--text-color);
+            font-size: 1.2rem;
+            margin-bottom: 2.5rem;
+            line-height: 1.8;
+            opacity: 0.9;
+        }
+        
+        .datasets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .dataset-card {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-align: center;
+        }
+        
+        .dataset-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(30, 136, 229, 0.2);
+            border-color: var(--primary-color);
+        }
+        
+        .dataset-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .dataset-title {
+            color: var(--primary-color);
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .dataset-description {
+            color: var(--text-color);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            opacity: 0.8;
+        }
+        
+        .dataset-button {
+            background: linear-gradient(90deg, #42a5f5 0%, #1e88e5 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.8rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        
+        .dataset-button:hover {
+            background: linear-gradient(90deg, #1976d2 0%, #1565c0 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 136, 229, 0.3);
+        }
+        
+        .dataset-button:active {
+            transform: translateY(0);
+        }
+        
+        .features-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 2px solid var(--border-color);
+        }
+        
+        .features-title {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+        
+        .features-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            text-align: right;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+        
+        .feature-icon {
+            font-size: 1.5rem;
+        }
+        
+        /* Dark mode support */
+        body.dark-mode .landing-content {
+            background: rgba(30, 30, 30, 0.95);
+            color: var(--text-color);
+        }
+        
+        body.dark-mode .dataset-card {
+            background: #2d2d2d;
+            border-color: #444;
+        }
+        
+        body.dark-mode .dataset-title {
+            color: var(--primary-color);
+        }
+        
+        body.dark-mode .dataset-description {
+            color: #e0e0e0;
+        }
+        
+        body.dark-mode .features-section {
+            border-top-color: #444;
+        }
+        
+        @media (max-width: 768px) {
+            .landing-content {
+                padding: 2rem 1.5rem;
+            }
+            
+            .landing-title {
+                font-size: 2rem;
+            }
+            
+            .landing-subtitle {
+                font-size: 1rem;
+            }
+            
+            .datasets-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Dark mode toggle -->
+    <button id="darkModeToggle" style="position:fixed;top:1rem;left:1rem;z-index:10001;display:flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;border-radius:50%;font-size:1.2rem;background:var(--primary-color);color:white;border:none;box-shadow:0 2px 6px rgba(30,136,229,0.10);">
+        <span id="darkModeIcon">🌙</span>
+    </button>
+    
+    <div class="landing-container">
+        <div class="landing-content">
+            <h1 class="landing-title">سامانه مشاهده و ویرایش داده‌ها</h1>
+            <p class="landing-subtitle">
+                به سامانه جامع مشاهده و ویرایش داده‌های قانونی خوش آمدید. 
+                در این سامانه می‌توانید داده‌های مختلف را مشاهده، فیلتر و ویرایش نمایید.
+            </p>
+            
+            <div class="datasets-grid">
+                <div class="dataset-card">
+                    <div class="dataset-icon">📋</div>
+                    <h3 class="dataset-title">بخش‌های قانونی</h3>
+                    <p class="dataset-description">
+                        مشاهده و ویرایش بخش‌های قانونی و روابط بین آن‌ها
+                    </p>
+                    <button class="dataset-button" onclick="window.location.href='tanghih_editing.html'">
+                        ورود به ویرایشگر روابط تنقیحی
+                    </button>
+                </div>
+                
+                <!-- Placeholder for future datasets -->
+                <!--
+                <div class="dataset-card">
+                    <div class="dataset-icon">📊</div>
+                    <h3 class="dataset-title">داده‌های دیگر</h3>
+                    <p class="dataset-description">
+                        توضیحات مربوط به مجموعه داده دیگر
+                    </p>
+                    <button class="dataset-button" onclick="window.location.href='other_dataset.html'">
+                        ورود به ویرایشگر
+                    </button>
+                </div>
+                -->
+            </div>
+            
+            <div class="features-section">
+                <h2 class="features-title">امکانات سامانه</h2>
+                <div class="features-list">
+                    <div class="feature-item">
+                        <span class="feature-icon">🔍</span>
+                        <span>جستجو و فیلتر پیشرفته</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">✏️</span>
+                        <span>ویرایش آسان و سریع</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">💾</span>
+                        <span>ذخیره و دانلود داده‌ها</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🌓</span>
+                        <span>حالت تاریک و روشن</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">📱</span>
+                        <span>سازگار با موبایل</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🔐</span>
+                        <span>امنیت و احراز هویت</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Dark mode toggle
+        document.getElementById('darkModeToggle').addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            document.getElementById('darkModeIcon').textContent = isDarkMode ? '☀️' : '🌙';
+            localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
+        });
+        
+        // Load dark mode preference
+        window.onload = function() {
+            if (localStorage.getItem('darkMode') === 'enabled') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkModeIcon').textContent = '☀️';
+            }
+        }
+    </script>
+</body>
+</html>
+
