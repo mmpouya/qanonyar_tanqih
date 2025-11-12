@@ -3,10 +3,9 @@ from typing import Optional
 from jose import jwt
 from passlib.context import CryptContext
 
-# JWT settings
-SECRET_KEY = "your-secret-key-change-this-in-production"  # Change this in production!
+SECRET_KEY = "your-secret-key-change-this-in-production"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30 * 24 * 60  # 30 days
+ACCESS_TOKEN_EXPIRE_MINUTES = 30 * 24 * 60
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

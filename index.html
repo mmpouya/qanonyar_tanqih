@@ -148,7 +148,6 @@
             font-size: 1.5rem;
         }
         
-        /* Dark mode support */
         body.dark-mode .landing-content {
             background: rgba(30, 30, 30, 0.95);
             color: var(--text-color);
@@ -264,7 +263,6 @@
     </div>
     
     <script>
-        // Dark mode toggle
         document.getElementById('darkModeToggle').addEventListener('click', function() {
             document.body.classList.toggle('dark-mode');
             const isDarkMode = document.body.classList.contains('dark-mode');
@@ -272,7 +270,6 @@
             localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
         });
         
-        // Load dark mode preference
         window.onload = function() {
             if (localStorage.getItem('darkMode') === 'enabled') {
                 document.body.classList.add('dark-mode');

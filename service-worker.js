@@ -1,4 +1,4 @@
-const CACHE_NAME = "hadith-keywords-cache-v4"; // نسخه کش را تغییر دادم
+const CACHE_NAME = "hadith-keywords-cache-v4";
 const FILES_TO_CACHE = [
     "./",
     "./index.html",
@@ -7,7 +7,6 @@ const FILES_TO_CACHE = [
     "./test_data.json"
 ];
 
-// نصب Service Worker و کش کردن فایل‌ها
 self.addEventListener("install", (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
@@ -16,7 +15,6 @@ self.addEventListener("install", (event) => {
     );
 });
 
-// فعال‌سازی Service Worker و حذف کش‌های قدیمی
 self.addEventListener("activate", (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {
@@ -31,12 +29,10 @@ self.addEventListener("activate", (event) => {
     );
 });
 
-// مدیریت درخواست‌ها با استراتژی Stale-While-Revalidate
 self.addEventListener("fetch", (event) => {
     event.respondWith(
         caches.match(event.request).then((response) => {
             if (response) {
-                // بازگرداندن نسخه کش‌شده بلافاصله
                 event.waitUntil(
                     fetch(event.request).then((newResponse) => {
                         return caches.open(CACHE_NAME).then((cache) => {

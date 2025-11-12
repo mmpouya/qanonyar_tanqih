@@ -317,7 +317,6 @@ input[type="checkbox"] {
     margin: 1rem 0;
 }
 
-/* Toast Notification Styles */
 .toast-container {
     position: fixed;
     top: 20px;
@@ -437,7 +436,6 @@ input[type="checkbox"] {
     transition: all 0.3s ease;
     width: 1000px;       
     
-    /* For textarea support */
     resize: vertical;
     min-height: 30px;
     box-sizing: border-box;
@@ -483,7 +481,6 @@ input[type="checkbox"] {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Collapsible Styles */
 .collapsible-header {
     display: flex;
     justify-content: space-between;
@@ -511,7 +508,6 @@ input[type="checkbox"] {
     line-height: 1.8;
     border: 1px solid var(--border-color);
     margin-top: -1px;
-    /* Overlap with header border */
 }
 
 .arrow {
@@ -537,7 +533,6 @@ input[type="checkbox"] {
     font-family: monospace;
 }
 
-/* Styles from inline attributes */
 .hidden {
     display: none;
 }
@@ -717,17 +712,14 @@ input[type="checkbox"] {
     pointer-events: none;
 }
 
-/* Proposition editing input size */
 .propositions-table .edit-input {
   width: 390px;
 }
 
-/* Relation editing input size */
 .relations-table .edit-input {
   width: 150px;
 }
 
-/* Beautiful navigation buttons */
 .nav-buttons.beautiful-nav {
     display: flex;
     gap: 1.2rem;
@@ -773,7 +765,6 @@ input[type="checkbox"] {
     box-shadow: 0 2px 8px rgba(30,136,229,0.12);
     transform: scale(0.98);
 }
-/* Dark mode support */
 body.dark-mode .beautiful-nav-btn {
     background: linear-gradient(90deg, #263859 0%, #1e2a3a 100%);
     color: #fff;

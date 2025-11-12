@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Element selections
     const jsonFileInput = document.getElementById('jsonFile');
     const jsonFileOverlayInput = document.getElementById('jsonFileOverlay');
     const hadithSelector = document.getElementById('hadithSelector');
@@ -20,7 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let sections = [];
     let currentHadithIndex = -1;
 
-    // --- Event Listeners ---
     jsonFileInput.addEventListener('change', handleFileUpload);
     jsonFileOverlayInput.addEventListener('change', handleFileUpload);
     hadithSelector.addEventListener('change', displayHadith);
@@ -29,8 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
     closeGuideModal.addEventListener('click', () => guideModal.style.display = 'none');
     window.addEventListener('scroll', handleScroll);
     backToTopBtn.addEventListener('click', scrollToTop);
-
-    // --- Functions ---
 
     function handleFileUpload(event) {
         const file = event.target.files[0];
@@ -60,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
         sections.forEach((section, index) => {
             const option = document.createElement('option');
             option.value = index;
-            // For new format, use section IDs
             const section1Id = section.section_1_id || `بخش ۱`;
             const section2Id = section.section_2_id || `بخش ۲`;
             option.textContent = `مقایسه ${section1Id} و ${section2Id}`;
@@ -74,7 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
         currentHadithIndex = parseInt(hadithSelector.value);
         if (currentHadithIndex >= 0 && currentHadithIndex < sections.length) {
             const section = sections[currentHadithIndex];
-            // Function to convert \n to <br> for HTML display
             const formatText = (text) => {
                 if (!text) return '';
                 return text.replace(/\n/g, '<br>');
@@ -98,9 +92,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderPropositions() { /* ... implementation needed ... */ }
-    function renderRelations() { /* ... implementation needed ... */ }
-    function renderGraph() { /* ... implementation needed ... */ }
+    function renderPropositions() { }
+    function renderRelations() { }
+    function renderGraph() { }
 
     window.addProposition = function() {
         const content = newPropContentInput.value.trim();
@@ -108,7 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('هشدار', 'لطفاً محتوای گزاره را وارد کنید.', 'warning');
             return;
         }
-        // Propositions not supported in the new structure
         newPropContentInput.value = '';
         showToast('هشدار', 'افزودن گزاره در ساختار جدید پشتیبانی نمی‌شود.', 'warning');
     }
@@ -142,11 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const isDarkMode = document.body.classList.contains('dark-mode');
         darkModeIcon.textContent = isDarkMode ? '☀️' : '🌙';
         localStorage.setItem('darkMode', isDarkMode);
-        // Re-render graph for dark mode
         renderGraph();
     }
 
-    // Check for saved dark mode preference
     if (localStorage.getItem('darkMode') === 'true') {
         toggleDarkMode();
     }
@@ -179,11 +170,11 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         container.appendChild(toast);
-        setTimeout(() => toast.classList.add('show'), 100); // Animate in
+        setTimeout(() => toast.classList.add('show'), 100);
 
         setTimeout(() => {
             toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 300); // Remove from DOM after animation
+            setTimeout(() => toast.remove(), 300);
         }, 5000);
     }
 
@@ -194,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return container;
     }
 
-    // Initial state setup
     mainContainer.classList.add('disabled-ui');
     hadithSelectorContainer.style.display = 'none';
     progressBarContainer.style.display = 'none';

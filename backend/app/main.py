@@ -12,15 +12,13 @@ from app.core.database import SessionLocal, engine, Base
 from app.models import User, SectionData
 from app.core.security import verify_token, create_access_token, get_password_hash, verify_password
 
-# Create tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Legal Sections Analysis API")
 
-# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with your domain
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,7 +26,6 @@ app.add_middleware(
 
 security = HTTPBearer()
 
-# Pydantic models
 class UserRegister(BaseModel):
     username: str
     password: str
@@ -39,7 +36,7 @@ class UserLogin(BaseModel):
     password: str
 
 class SectionDataCreate(BaseModel):
-    data: List[dict]  # List of section objects
+    data: List[dict]
 
 class SectionDataResponse(BaseModel):
     id: int
@@ -51,7 +48,6 @@ class SectionDataResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# Dependency to get database session
 def get_db():
     db = SessionLocal()
     try:
@@ -59,7 +55,6 @@ def get_db():
     finally:
         db.close()
 
-# Dependency to get current user
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
@@ -80,14 +75,12 @@ def get_current_user(
         )
     return user
 
-# Routes
 @app.get("/")
 def read_root():
     return {"message": "Legal Sections Analysis API"}
 
 @app.post("/api/register", response_model=dict)
 def register(user_data: UserRegister, db: Session = Depends(get_db)):
-    # Check if user exists
     existing_user = db.query(User).filter(User.username == user_data.username).first()
     if existing_user:
         raise HTTPException(
@@ -95,7 +88,6 @@ def register(user_data: UserRegister, db: Session = Depends(get_db)):
             detail="Username already exists"
         )
     
-    # Create new user
     hashed_password = get_password_hash(user_data.password)
     new_user = User(
         username=user_data.username,
@@ -127,7 +119,6 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
 
 @app.get("/api/sample-data", response_model=dict)
 def get_sample_data(current_user: User = Depends(get_current_user)):
-    # Load sample data from file
     sample_file_path = os.path.join(os.path.dirname(__file__), "..", "new_sample.json")
     try:
         with open(sample_file_path, "r", encoding="utf-8") as f:
@@ -145,13 +136,11 @@ def save_data(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Check if user already has saved data
     existing_data = db.query(SectionData).filter(
         SectionData.user_id == current_user.id
     ).first()
     
     if existing_data:
-        # Update existing data
         existing_data.data = section_data.data
         existing_data.updated_at = datetime.utcnow()
         db.commit()
@@ -162,7 +151,6 @@ def save_data(
             "updated_at": existing_data.updated_at
         }
     else:
-        # Create new data entry
         new_data = SectionData(
             user_id=current_user.id,
             data=section_data.data
