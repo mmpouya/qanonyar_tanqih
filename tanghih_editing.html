@@ -40,34 +40,6 @@
     <button id="darkModeToggle" style="position:fixed;top:1rem;left:1rem;z-index:10001;display:flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;border-radius:50%;font-size:1.2rem;background:var(--primary-color);color:white;border:none;box-shadow:0 2px 6px rgba(30,136,229,0.10);">
         <span id="darkModeIcon">🌙</span>
     </button>
-    <!-- Login/User Info (top right) -->
-    <div id="userInfoContainer" style="position:fixed;top:1rem;right:1rem;z-index:10001;display:none;">
-        <span id="userInfoText" style="margin-left:0.5rem;color:var(--primary-color);"></span>
-        <button id="logoutBtn" class="button button-secondary" style="padding:0.3rem 0.8rem;font-size:0.9rem;">خروج</button>
-    </div>
-    <button id="loginBtn" style="position:fixed;top:1rem;right:1rem;z-index:10001;padding:0.3rem 1rem;background:var(--primary-color);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.9rem;">ورود / ثبت‌نام</button>
-    <!-- Login/Register Modal -->
-    <div id="loginModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,136,229,0.18);z-index:20001;align-items:center;justify-content:center;">
-        <div style="background:#fff;color:#1565c0;border-radius:14px;box-shadow:0 8px 32px rgba(30,136,229,0.18);padding:2.5rem 2.5rem;max-width:420px;width:90vw;position:relative;">
-            <button id="closeLoginModal" style="position:absolute;top:12px;left:12px;background:transparent;border:none;font-size:1.3rem;color:#1565c0;cursor:pointer;">✖️</button>
-            <h2 style="margin-bottom:1rem;text-align:center;">ورود / ثبت‌نام</h2>
-            <div id="loginForm">
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;margin-bottom:0.3rem;">نام کاربری:</label>
-                    <input type="text" id="loginUsername" style="width:100%;padding:0.5rem;border:1px solid #ddd;border-radius:6px;font-size:1rem;">
-                </div>
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;margin-bottom:0.3rem;">رمز عبور:</label>
-                    <input type="password" id="loginPassword" style="width:100%;padding:0.5rem;border:1px solid #ddd;border-radius:6px;font-size:1rem;">
-                </div>
-                <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
-                    <button id="submitLogin" class="button button-primary" style="flex:1;">ورود</button>
-                    <button id="submitRegister" class="button button-secondary" style="flex:1;">ثبت‌نام</button>
-                </div>
-                <div id="loginError" style="color:#f44336;text-align:center;display:none;margin-top:0.5rem;"></div>
-            </div>
-        </div>
-    </div>
     <div class="container disabled-ui" id="mainContainer">
         <!-- Step-by-step guide (compact) -->
         <button id="guideBtn" style="position:absolute; top:18px; right:32px; background:transparent; color:#1565c0; border:none; font-size:1.2rem; cursor:pointer; z-index:10; display:flex; align-items:center; gap:4px;">
@@ -88,14 +60,11 @@
         </div>
         <!-- File Upload Section -->
         <h3 style="color:var(--primary-color); margin-bottom:0.5rem;">۱. بارگذاری فایل بخش‌های قانونی</h3>
-        <div class="file-upload" style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+        <div class="file-upload">
             <label class="file-upload-label">
                 <span>📁 انتخاب فایل JSON</span>
                 <input type="file" id="jsonFile" accept="application/json">
             </label>
-            <button id="loadSampleDataBtn" class="button button-secondary" style="display:none;padding:0.7rem 1.5rem;">
-                <span>📋 بارگذاری داده نمونه</span>
-            </button>
         </div>
         <!-- Navigation Buttons (Top) -->
         <div id="navButtonsTop" class="nav-buttons beautiful-nav" style="justify-content:center; margin-bottom:0.5rem;">
@@ -237,175 +206,11 @@
         </div>
     </div>
     <script>
-        // API Configuration - adjust this to match your backend URL
-        const API_BASE_URL = (() => {
-            // If running locally, use localhost:8000
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                return 'http://localhost:8000';
-            }
-            // For production, use the same domain with /api prefix or adjust as needed
-            // Option 1: Same domain, different port (if backend is on port 8000)
-            // return window.location.origin.replace(/:\d+$/, ':8000');
-            // Option 2: Same domain with /api prefix (if using reverse proxy)
-            return `${window.location.protocol}//${window.location.hostname}:8000`;
-        })();
-        
-        // Authentication state
-        let authToken = localStorage.getItem('authToken');
-        let currentUser = null;
-        
         let sections = [];
         let selectedHadithIndex = 0;
         let uploadedFileName = "";
         // Filter variables
         let filteredSections = [];
-        
-        // Check authentication status on load
-        function checkAuthStatus() {
-            if (authToken) {
-                // Verify token is still valid by getting user info
-                fetch(`${API_BASE_URL}/api/user/me`, {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    }
-                })
-                .then(response => {
-                    if (response.ok) {
-                        return response.json();
-                    } else {
-                        throw new Error('Invalid token');
-                    }
-                })
-                .then(user => {
-                    currentUser = user;
-                    updateAuthUI();
-                })
-                .catch(() => {
-                    // Token invalid, clear it
-                    authToken = null;
-                    localStorage.removeItem('authToken');
-                    updateAuthUI();
-                });
-            } else {
-                updateAuthUI();
-            }
-        }
-        
-        function updateAuthUI() {
-            const loginBtn = document.getElementById('loginBtn');
-            const userInfoContainer = document.getElementById('userInfoContainer');
-            const userInfoText = document.getElementById('userInfoText');
-            const loadSampleDataBtn = document.getElementById('loadSampleDataBtn');
-            
-            if (authToken && currentUser) {
-                loginBtn.style.display = 'none';
-                userInfoContainer.style.display = 'block';
-                userInfoText.textContent = `کاربر: ${currentUser.username}`;
-                loadSampleDataBtn.style.display = 'inline-block';
-            } else {
-                loginBtn.style.display = 'block';
-                userInfoContainer.style.display = 'none';
-                loadSampleDataBtn.style.display = 'none';
-            }
-        }
-        
-        // API helper functions
-        async function apiRequest(endpoint, options = {}) {
-            const url = `${API_BASE_URL}${endpoint}`;
-            const headers = {
-                'Content-Type': 'application/json',
-                ...options.headers
-            };
-            
-            if (authToken) {
-                headers['Authorization'] = `Bearer ${authToken}`;
-            }
-            
-            try {
-                const response = await fetch(url, {
-                    ...options,
-                    headers
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json().catch(() => ({ detail: 'خطا در ارتباط با سرور' }));
-                    throw new Error(error.detail || `HTTP error! status: ${response.status}`);
-                }
-                
-                return await response.json();
-            } catch (error) {
-                console.error('API request error:', error);
-                throw error;
-            }
-        }
-        
-        // Load sample data
-        async function loadSampleData() {
-            try {
-                showToast('در حال بارگذاری...', 'در حال دریافت داده نمونه از سرور', 'success');
-                const response = await apiRequest('/api/sample-data');
-                const sampleData = response.data;
-                
-                if (!Array.isArray(sampleData) || sampleData.length === 0) {
-                    showToast('خطا', 'داده نمونه معتبر نیست.', 'error');
-                    return;
-                }
-                
-                sections = sampleData;
-                filteredSections = [...sampleData];
-                selectedHadithIndex = 0;
-                uploadedFileName = 'sample_data.json';
-                
-                document.getElementById('fileUploadOverlay').style.display = 'none';
-                setUIEnabled(true);
-                populateHadithSelector();
-                populateFilterOptions();
-                populateModalFilterOptions();
-                document.getElementById('hadithSelectorContainer').style.display = 'flex';
-                document.getElementById('filterSection').style.display = 'block';
-                document.getElementById('progressBarContainer').style.display = 'block';
-                document.getElementById('filterModal').style.display = 'flex';
-                document.getElementById('hadithDisplay').style.display = 'none';
-                document.getElementById('relationTypeDisplay').style.display = 'none';
-                document.getElementById('relationExplanationDisplay').style.display = 'none';
-                document.getElementById('navButtonsTop').style.display = 'none';
-                document.getElementById('navButtonsBottom').style.display = 'none';
-                updateNavButtons();
-                
-                // Save to local storage
-                localStorage.setItem('sections', JSON.stringify(sections));
-                
-                showToast('موفقیت', 'داده نمونه با موفقیت بارگذاری شد.', 'success');
-            } catch (error) {
-                showToast('خطا', `خطا در بارگذاری داده نمونه: ${error.message}`, 'error');
-            }
-        }
-        
-        // Save data to backend
-        async function saveDataToBackend() {
-            if (!authToken) {
-                return; // Not logged in, skip backend save
-            }
-            
-            try {
-                const modifiedSections = sections.map((section, index) => {
-                    if (editedSections[index]) {
-                        return { ...section, ...editedSections[index] };
-                    }
-                    return section;
-                });
-                
-                await apiRequest('/api/save-data', {
-                    method: 'POST',
-                    body: JSON.stringify({ data: modifiedSections })
-                });
-                
-                console.log('Data saved to backend successfully');
-            } catch (error) {
-                console.error('Error saving to backend:', error);
-                // Don't show error to user, as local save still works
-            }
-        }
         function showToast(title, message, type = 'success') {
             let toastContainer = document.getElementById('toastContainer');
             if (!toastContainer) {
@@ -443,12 +248,12 @@
                 });
             }
         }
-        document.getElementById('jsonFile').addEventListener('change', async function(event) {
+        document.getElementById('jsonFile').addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (!file) return;
             uploadedFileName = file.name;
             const reader = new FileReader();
-            reader.onload = async function(e) {
+            reader.onload = function(e) {
                 try {
                     const raw = JSON.parse(e.target.result);
                     if (!Array.isArray(raw) || raw.length === 0) {
@@ -475,12 +280,6 @@
                     document.getElementById('navButtonsTop').style.display = 'none';
                     document.getElementById('navButtonsBottom').style.display = 'none';
                     updateNavButtons();
-                    
-                    // Save to local storage
-                    localStorage.setItem('sections', JSON.stringify(sections));
-                    
-                    // Save to backend if logged in
-                    await saveDataToBackend();
                 } catch (error) {
                     showToast('خطا', 'خطا در پردازش فایل JSON. لطفاً یک فایل معتبر انتخاب کنید.', 'error');
                     return;
@@ -490,12 +289,12 @@
         });
         
         // Overlay file input
-        document.getElementById('jsonFileOverlay').addEventListener('change', async function(event) {
+        document.getElementById('jsonFileOverlay').addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (!file) return;
             uploadedFileName = file.name;
             const reader = new FileReader();
-            reader.onload = async function(e) {
+            reader.onload = function(e) {
                 try {
                     const raw = JSON.parse(e.target.result);
                     if (!Array.isArray(raw) || raw.length === 0) {
@@ -522,12 +321,6 @@
                     document.getElementById('navButtonsTop').style.display = 'none';
                     document.getElementById('navButtonsBottom').style.display = 'none';
                     updateNavButtons();
-                    
-                    // Save to local storage
-                    localStorage.setItem('sections', JSON.stringify(sections));
-                    
-                    // Save to backend if logged in
-                    await saveDataToBackend();
                 } catch (error) {
                     showToast('خطا', 'خطا در پردازش فایل JSON. لطفاً یک فایل معتبر انتخاب کنید.', 'error');
                     return;
@@ -1064,41 +857,8 @@
         }
         // On load, show overlay and disable UI
         window.addEventListener('DOMContentLoaded', function() {
-            checkAuthStatus();
             setUIEnabled(false);
             document.getElementById('fileUploadOverlay').style.display = 'flex';
-            
-            // Login modal handlers
-            document.getElementById('loginBtn').addEventListener('click', function() {
-                document.getElementById('loginModal').style.display = 'flex';
-            });
-            
-            document.getElementById('closeLoginModal').addEventListener('click', function() {
-                document.getElementById('loginModal').style.display = 'none';
-                document.getElementById('loginError').style.display = 'none';
-            });
-            
-            document.getElementById('loginModal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    this.style.display = 'none';
-                    document.getElementById('loginError').style.display = 'none';
-                }
-            });
-            
-            document.getElementById('submitLogin').addEventListener('click', handleLogin);
-            document.getElementById('submitRegister').addEventListener('click', handleRegister);
-            
-            // Allow Enter key to submit login
-            document.getElementById('loginPassword').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    handleLogin();
-                }
-            });
-            
-            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
-            
-            // Load sample data button
-            document.getElementById('loadSampleDataBtn').addEventListener('click', loadSampleData);
             // Fix: Add event listeners for top navigation buttons
             document.getElementById('prevHadithBtn').addEventListener('click', function() {
                 navigateHadith(-1);
@@ -1148,217 +908,19 @@
             
             // Add event listener for save and download button
             document.getElementById('saveDownloadBtn').addEventListener('click', downloadModifiedData);
-            
-            // Add editing functionality
-            let editedSections = {}; // To cache changes
-            
-            // Function to get current section with edits applied
-            function getCurrentSectionWithEdits() {
-                const section = getCurrentHadith();
-                if (!section) return null;
-                
-                // Apply cached edits if they exist
-                const sectionIndex = selectedHadithIndex;
-                if (editedSections[sectionIndex]) {
-                    return { ...section, ...editedSections[sectionIndex] };
-                }
-                
-                return section;
-            }
-            
-            // Function to start editing a field
-            function startEditing(field) {
-                const section = getCurrentSectionWithEdits();
-                if (!section) return;
-                
-                const displayElement = field === 'relation_type' ? 
-                    document.getElementById('relationTypeDisplay') : 
-                    document.getElementById('relationExplanationDisplay');
-                    
-                const textElement = field === 'relation_type' ? 
-                    document.getElementById('relationTypeText') : 
-                    document.getElementById('relationExplanationText');
-                    
-                const editButton = field === 'relation_type' ? 
-                    document.getElementById('editRelationTypeBtn') : 
-                    document.getElementById('editExplanationBtn');
-                
-                // Save current text
-                const currentText = section[field] || '';
-                
-                // Create input field
-                let input;
-                if (field === 'explanation') {
-                    // Use textarea for explanation to handle multi-line text
-                    input = document.createElement('textarea');
-                    input.className = 'edit-input';
-                    input.value = currentText;
-                    input.style.flex = '1';
-                    input.style.width = '1000px';
-                    input.style.height = '250px';
-                    input.style.padding = '10px';
-                    input.style.fontFamily = 'inherit';
-                } else {
-                    // Use regular input for relation_type
-                    input = document.createElement('input');
-                    input.type = 'text';
-                    input.className = 'edit-input';
-                    input.value = currentText;
-                    input.style.flex = '1';
-                    input.style.width = '1000px';
-                }
-                
-                // Create save button
-                const saveButton = document.createElement('button');
-                saveButton.className = 'save-edit';
-                saveButton.innerHTML = '✓';
-                saveButton.title = 'ذخیره';
-                
-                // Create cancel button
-                const cancelButton = document.createElement('button');
-                cancelButton.className = 'cancel-edit';
-                cancelButton.innerHTML = '✕';
-                cancelButton.title = 'لغو';
-                
-                // Create actions container
-                const actionsContainer = document.createElement('div');
-                actionsContainer.className = 'edit-actions';
-                actionsContainer.appendChild(saveButton);
-                actionsContainer.appendChild(cancelButton);
-                
-                // Clear display element and add input and buttons
-                displayElement.innerHTML = '';
-                displayElement.appendChild(input);
-                displayElement.appendChild(actionsContainer);
-                
-                // Focus input
-                input.focus();
-                
-                // Save handler
-                saveButton.addEventListener('click', function() {
-                    const newValue = input.value.trim();
-                    
-                    // Cache the edit
-                    const sectionIndex = selectedHadithIndex;
-                    if (!editedSections[sectionIndex]) {
-                        editedSections[sectionIndex] = {};
-                    }
-                    editedSections[sectionIndex][field] = newValue || null;
-                    
-                    // Update display
-                    finishEditing(field, newValue);
-                    
-                    showToast('موفقیت', 'تغییرات با موفقیت ذخیره شد.', 'success');
-                });
-                
-                // Cancel handler
-                cancelButton.addEventListener('click', function() {
-                    finishEditing(field, currentText);
-                });
-                
-                // Also save on Enter key (Ctrl+Enter for textarea)
-                input.addEventListener('keydown', function(e) {
-                    if (field === 'explanation' && e.key === 'Enter' && e.ctrlKey) {
-                        // For textarea, use Ctrl+Enter to save
-                        saveButton.click();
-                    } else if (field !== 'explanation' && e.key === 'Enter') {
-                        // For input, use Enter to save
-                        saveButton.click();
-                    } else if (e.key === 'Escape') {
-                        cancelButton.click();
-                    }
-                });
-            }
-            
-            // Function to finish editing and restore display
-            function finishEditing(field, value) {
-                const displayElement = field === 'relation_type' ? 
-                    document.getElementById('relationTypeDisplay') : 
-                    document.getElementById('relationExplanationDisplay');
-                    
-                // Create new text element
-                const newTextElement = document.createElement('span');
-                newTextElement.id = field === 'relation_type' ? 'relationTypeText' : 'relationExplanationText';
-                
-                // Update text
-                const displayText = value ? 
-                    (field === 'relation_type' ? `نوع رابطه: ${value}` : `توضیح: ${value}`) : 
-                    (field === 'relation_type' ? 'نوع رابطه: -' : 'توضیح: -');
-                    
-                newTextElement.textContent = displayText;
-                
-                // Create new edit button
-                const newEditButton = document.createElement('button');
-                newEditButton.id = field === 'relation_type' ? 'editRelationTypeBtn' : 'editExplanationBtn';
-                newEditButton.className = 'edit-button';
-                newEditButton.title = field === 'relation_type' ? 'ویرایش نوع رابطه' : 'ویرایش توضیح';
-                newEditButton.innerHTML = '✏️';
-                
-                // Add event listener to new edit button
-                newEditButton.addEventListener('click', function() {
-                    startEditing(field);
-                });
-                
-                // Clear display element and restore original structure
-                displayElement.innerHTML = '';
-                displayElement.appendChild(newTextElement);
-                displayElement.appendChild(newEditButton);
-            }
-            
-            // Function to download modified data
-            async function downloadModifiedData() {
-                // Create a copy of the original data with edits applied
-                const modifiedSections = sections.map((section, index) => {
-                    if (editedSections[index]) {
-                        return { ...section, ...editedSections[index], is_edited: true };
-                    }
-                    return section;
-                });
-                
-                // Save to local storage
-                localStorage.setItem('sections', JSON.stringify(modifiedSections));
-                
-                // Save to backend if logged in
-                await saveDataToBackend();
-                
-                // Create filename with current timestamp
-                const now = new Date();
-                const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
-                const fileName = uploadedFileName ? 
-                    `${uploadedFileName.replace('.json', '')}_${timestamp}.json` : 
-                    `modified_data_${timestamp}.json`;
-                
-                // Create and download file
-                const dataStr = JSON.stringify(modifiedSections, null, 2);
-                const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(dataBlob);
-                
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = fileName;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-                
-                showToast('موفقیت', `فایل با موفقیت دانلود شد و در پایگاه داده ذخیره شد: ${fileName}`, 'success');
-            }
         });
-        
         document.getElementById('darkModeToggle').addEventListener('click', function() {
             document.body.classList.toggle('dark-mode');
             const isDarkMode = document.body.classList.contains('dark-mode');
             document.getElementById('darkModeIcon').textContent = isDarkMode ? '☀️' : '🌙';
             localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
         });
-        
         window.onload = function() {
             if (localStorage.getItem('darkMode') === 'enabled') {
                 document.body.classList.add('dark-mode');
                 document.getElementById('darkModeIcon').textContent = '☀️';
             }
         }
-        
         // Floating Back to Top Button logic
         const backToTopBtn = document.getElementById('backToTopBtn');
         window.addEventListener('scroll', function() {
@@ -1368,20 +930,210 @@
                 backToTopBtn.style.display = 'none';
             }
         });
-        
         backToTopBtn.onclick = function() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
-        
         // Guide Modal logic
         document.getElementById('guideBtn').onclick = function() {
             document.getElementById('guideModal').style.display = 'flex';
         };
-        
         document.getElementById('closeGuideModal').onclick = function() {
             document.getElementById('guideModal').style.display = 'none';
         };
-        
         document.getElementById('guideModal').addEventListener('click', function(e) {
             if (e.target === this) this.style.display = 'none';
         });
+        
+        // Add editing functionality
+        let editedSections = {}; // To cache changes
+        
+        // Function to get current section with edits applied
+        function getCurrentSectionWithEdits() {
+            const section = getCurrentHadith();
+            if (!section) return null;
+            
+            // Apply cached edits if they exist
+            const sectionIndex = selectedHadithIndex;
+            if (editedSections[sectionIndex]) {
+                return { ...section, ...editedSections[sectionIndex] };
+            }
+            
+            return section;
+        }
+        
+        // Function to start editing a field
+        function startEditing(field) {
+            const section = getCurrentSectionWithEdits();
+            if (!section) return;
+            
+            const displayElement = field === 'relation_type' ? 
+                document.getElementById('relationTypeDisplay') : 
+                document.getElementById('relationExplanationDisplay');
+                
+            const textElement = field === 'relation_type' ? 
+                document.getElementById('relationTypeText') : 
+                document.getElementById('relationExplanationText');
+                
+            const editButton = field === 'relation_type' ? 
+                document.getElementById('editRelationTypeBtn') : 
+                document.getElementById('editExplanationBtn');
+            
+            // Save current text
+            const currentText = section[field] || '';
+            
+            // Create input field
+            let input;
+            if (field === 'explanation') {
+                // Use textarea for explanation to handle multi-line text
+                input = document.createElement('textarea');
+                input.className = 'edit-input';
+                input.value = currentText;
+                input.style.flex = '1';
+                input.style.width = '1000px';
+                input.style.height = '250px';
+                input.style.padding = '10px';
+                input.style.fontFamily = 'inherit';
+            } else {
+                // Use regular input for relation_type
+                input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'edit-input';
+                input.value = currentText;
+                input.style.flex = '1';
+                input.style.width = '1000px';
+            }
+            
+            // Create save button
+            const saveButton = document.createElement('button');
+            saveButton.className = 'save-edit';
+            saveButton.innerHTML = '✓';
+            saveButton.title = 'ذخیره';
+            
+            // Create cancel button
+            const cancelButton = document.createElement('button');
+            cancelButton.className = 'cancel-edit';
+            cancelButton.innerHTML = '✕';
+            cancelButton.title = 'لغو';
+            
+            // Create actions container
+            const actionsContainer = document.createElement('div');
+            actionsContainer.className = 'edit-actions';
+            actionsContainer.appendChild(saveButton);
+            actionsContainer.appendChild(cancelButton);
+            
+            // Clear display element and add input and buttons
+            displayElement.innerHTML = '';
+            displayElement.appendChild(input);
+            displayElement.appendChild(actionsContainer);
+            
+            // Focus input
+            input.focus();
+            
+            // Save handler
+            saveButton.addEventListener('click', function() {
+                const newValue = input.value.trim();
+                
+                // Cache the edit
+                const sectionIndex = selectedHadithIndex;
+                if (!editedSections[sectionIndex]) {
+                    editedSections[sectionIndex] = {};
+                }
+                editedSections[sectionIndex][field] = newValue || null;
+                
+                // Update display
+                finishEditing(field, newValue);
+                
+                showToast('موفقیت', 'تغییرات با موفقیت ذخیره شد.', 'success');
+            });
+            
+            // Cancel handler
+            cancelButton.addEventListener('click', function() {
+                finishEditing(field, currentText);
+            });
+            
+            // Also save on Enter key (Ctrl+Enter for textarea)
+            input.addEventListener('keydown', function(e) {
+                if (field === 'explanation' && e.key === 'Enter' && e.ctrlKey) {
+                    // For textarea, use Ctrl+Enter to save
+                    saveButton.click();
+                } else if (field !== 'explanation' && e.key === 'Enter') {
+                    // For input, use Enter to save
+                    saveButton.click();
+                } else if (e.key === 'Escape') {
+                    cancelButton.click();
+                }
+            });
+        }
+        
+        // Function to finish editing and restore display
+        function finishEditing(field, value) {
+            const displayElement = field === 'relation_type' ? 
+                document.getElementById('relationTypeDisplay') : 
+                document.getElementById('relationExplanationDisplay');
+                
+            // Create new text element
+            const newTextElement = document.createElement('span');
+            newTextElement.id = field === 'relation_type' ? 'relationTypeText' : 'relationExplanationText';
+            
+            // Update text
+            const displayText = value ? 
+                (field === 'relation_type' ? `نوع رابطه: ${value}` : `توضیح: ${value}`) : 
+                (field === 'relation_type' ? 'نوع رابطه: -' : 'توضیح: -');
+                
+            newTextElement.textContent = displayText;
+            
+            // Create new edit button
+            const newEditButton = document.createElement('button');
+            newEditButton.id = field === 'relation_type' ? 'editRelationTypeBtn' : 'editExplanationBtn';
+            newEditButton.className = 'edit-button';
+            newEditButton.title = field === 'relation_type' ? 'ویرایش نوع رابطه' : 'ویرایش توضیح';
+            newEditButton.innerHTML = '✏️';
+            
+            // Add event listener to new edit button
+            newEditButton.addEventListener('click', function() {
+                startEditing(field);
+            });
+            
+            // Clear display element and restore original structure
+            displayElement.innerHTML = '';
+            displayElement.appendChild(newTextElement);
+            displayElement.appendChild(newEditButton);
+        }
+        
+        // Function to download modified data
+        function downloadModifiedData() {
+            // Create a copy of the original data with edits applied
+            const modifiedSections = sections.map((section, index) => {
+                if (editedSections[index]) {
+                    return { ...section, ...editedSections[index], is_edited: true };
+                }
+                return section;
+            });
+            
+            // Create filename with current timestamp
+            const now = new Date();
+            const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+            const fileName = uploadedFileName ? 
+                `${uploadedFileName.replace('.json', '')}_${timestamp}.json` : 
+                `modified_data_${timestamp}.json`;
+            
+            // Create and download file
+            const dataStr = JSON.stringify(modifiedSections, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showToast('موفقیت', `فایل با موفقیت دانلود شد: ${fileName}`, 'success');
+        }
+        
+
+    </script>
+</body>
+</html>
