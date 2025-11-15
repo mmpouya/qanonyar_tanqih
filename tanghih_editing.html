@@ -1148,19 +1148,217 @@
             
             // Add event listener for save and download button
             document.getElementById('saveDownloadBtn').addEventListener('click', downloadModifiedData);
+            
+            // Add editing functionality
+            let editedSections = {}; // To cache changes
+            
+            // Function to get current section with edits applied
+            function getCurrentSectionWithEdits() {
+                const section = getCurrentHadith();
+                if (!section) return null;
+                
+                // Apply cached edits if they exist
+                const sectionIndex = selectedHadithIndex;
+                if (editedSections[sectionIndex]) {
+                    return { ...section, ...editedSections[sectionIndex] };
+                }
+                
+                return section;
+            }
+            
+            // Function to start editing a field
+            function startEditing(field) {
+                const section = getCurrentSectionWithEdits();
+                if (!section) return;
+                
+                const displayElement = field === 'relation_type' ? 
+                    document.getElementById('relationTypeDisplay') : 
+                    document.getElementById('relationExplanationDisplay');
+                    
+                const textElement = field === 'relation_type' ? 
+                    document.getElementById('relationTypeText') : 
+                    document.getElementById('relationExplanationText');
+                    
+                const editButton = field === 'relation_type' ? 
+                    document.getElementById('editRelationTypeBtn') : 
+                    document.getElementById('editExplanationBtn');
+                
+                // Save current text
+                const currentText = section[field] || '';
+                
+                // Create input field
+                let input;
+                if (field === 'explanation') {
+                    // Use textarea for explanation to handle multi-line text
+                    input = document.createElement('textarea');
+                    input.className = 'edit-input';
+                    input.value = currentText;
+                    input.style.flex = '1';
+                    input.style.width = '1000px';
+                    input.style.height = '250px';
+                    input.style.padding = '10px';
+                    input.style.fontFamily = 'inherit';
+                } else {
+                    // Use regular input for relation_type
+                    input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'edit-input';
+                    input.value = currentText;
+                    input.style.flex = '1';
+                    input.style.width = '1000px';
+                }
+                
+                // Create save button
+                const saveButton = document.createElement('button');
+                saveButton.className = 'save-edit';
+                saveButton.innerHTML = '✓';
+                saveButton.title = 'ذخیره';
+                
+                // Create cancel button
+                const cancelButton = document.createElement('button');
+                cancelButton.className = 'cancel-edit';
+                cancelButton.innerHTML = '✕';
+                cancelButton.title = 'لغو';
+                
+                // Create actions container
+                const actionsContainer = document.createElement('div');
+                actionsContainer.className = 'edit-actions';
+                actionsContainer.appendChild(saveButton);
+                actionsContainer.appendChild(cancelButton);
+                
+                // Clear display element and add input and buttons
+                displayElement.innerHTML = '';
+                displayElement.appendChild(input);
+                displayElement.appendChild(actionsContainer);
+                
+                // Focus input
+                input.focus();
+                
+                // Save handler
+                saveButton.addEventListener('click', function() {
+                    const newValue = input.value.trim();
+                    
+                    // Cache the edit
+                    const sectionIndex = selectedHadithIndex;
+                    if (!editedSections[sectionIndex]) {
+                        editedSections[sectionIndex] = {};
+                    }
+                    editedSections[sectionIndex][field] = newValue || null;
+                    
+                    // Update display
+                    finishEditing(field, newValue);
+                    
+                    showToast('موفقیت', 'تغییرات با موفقیت ذخیره شد.', 'success');
+                });
+                
+                // Cancel handler
+                cancelButton.addEventListener('click', function() {
+                    finishEditing(field, currentText);
+                });
+                
+                // Also save on Enter key (Ctrl+Enter for textarea)
+                input.addEventListener('keydown', function(e) {
+                    if (field === 'explanation' && e.key === 'Enter' && e.ctrlKey) {
+                        // For textarea, use Ctrl+Enter to save
+                        saveButton.click();
+                    } else if (field !== 'explanation' && e.key === 'Enter') {
+                        // For input, use Enter to save
+                        saveButton.click();
+                    } else if (e.key === 'Escape') {
+                        cancelButton.click();
+                    }
+                });
+            }
+            
+            // Function to finish editing and restore display
+            function finishEditing(field, value) {
+                const displayElement = field === 'relation_type' ? 
+                    document.getElementById('relationTypeDisplay') : 
+                    document.getElementById('relationExplanationDisplay');
+                    
+                // Create new text element
+                const newTextElement = document.createElement('span');
+                newTextElement.id = field === 'relation_type' ? 'relationTypeText' : 'relationExplanationText';
+                
+                // Update text
+                const displayText = value ? 
+                    (field === 'relation_type' ? `نوع رابطه: ${value}` : `توضیح: ${value}`) : 
+                    (field === 'relation_type' ? 'نوع رابطه: -' : 'توضیح: -');
+                    
+                newTextElement.textContent = displayText;
+                
+                // Create new edit button
+                const newEditButton = document.createElement('button');
+                newEditButton.id = field === 'relation_type' ? 'editRelationTypeBtn' : 'editExplanationBtn';
+                newEditButton.className = 'edit-button';
+                newEditButton.title = field === 'relation_type' ? 'ویرایش نوع رابطه' : 'ویرایش توضیح';
+                newEditButton.innerHTML = '✏️';
+                
+                // Add event listener to new edit button
+                newEditButton.addEventListener('click', function() {
+                    startEditing(field);
+                });
+                
+                // Clear display element and restore original structure
+                displayElement.innerHTML = '';
+                displayElement.appendChild(newTextElement);
+                displayElement.appendChild(newEditButton);
+            }
+            
+            // Function to download modified data
+            async function downloadModifiedData() {
+                // Create a copy of the original data with edits applied
+                const modifiedSections = sections.map((section, index) => {
+                    if (editedSections[index]) {
+                        return { ...section, ...editedSections[index], is_edited: true };
+                    }
+                    return section;
+                });
+                
+                // Save to local storage
+                localStorage.setItem('sections', JSON.stringify(modifiedSections));
+                
+                // Save to backend if logged in
+                await saveDataToBackend();
+                
+                // Create filename with current timestamp
+                const now = new Date();
+                const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+                const fileName = uploadedFileName ? 
+                    `${uploadedFileName.replace('.json', '')}_${timestamp}.json` : 
+                    `modified_data_${timestamp}.json`;
+                
+                // Create and download file
+                const dataStr = JSON.stringify(modifiedSections, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                showToast('موفقیت', `فایل با موفقیت دانلود شد و در پایگاه داده ذخیره شد: ${fileName}`, 'success');
+            }
         });
+        
         document.getElementById('darkModeToggle').addEventListener('click', function() {
             document.body.classList.toggle('dark-mode');
             const isDarkMode = document.body.classList.contains('dark-mode');
             document.getElementById('darkModeIcon').textContent = isDarkMode ? '☀️' : '🌙';
             localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
         });
+        
         window.onload = function() {
             if (localStorage.getItem('darkMode') === 'enabled') {
                 document.body.classList.add('dark-mode');
                 document.getElementById('darkModeIcon').textContent = '☀️';
             }
         }
+        
         // Floating Back to Top Button logic
         const backToTopBtn = document.getElementById('backToTopBtn');
         window.addEventListener('scroll', function() {
@@ -1170,290 +1368,20 @@
                 backToTopBtn.style.display = 'none';
             }
         });
+        
         backToTopBtn.onclick = function() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
+        
         // Guide Modal logic
         document.getElementById('guideBtn').onclick = function() {
             document.getElementById('guideModal').style.display = 'flex';
         };
+        
         document.getElementById('closeGuideModal').onclick = function() {
             document.getElementById('guideModal').style.display = 'none';
         };
+        
         document.getElementById('guideModal').addEventListener('click', function(e) {
             if (e.target === this) this.style.display = 'none';
         });
-        
-        // Add editing functionality
-        let editedSections = {}; // To cache changes
-        
-        // Function to get current section with edits applied
-        function getCurrentSectionWithEdits() {
-            const section = getCurrentHadith();
-            if (!section) return null;
-            
-            // Apply cached edits if they exist
-            const sectionIndex = selectedHadithIndex;
-            if (editedSections[sectionIndex]) {
-                return { ...section, ...editedSections[sectionIndex] };
-            }
-            
-            return section;
-        }
-        
-        // Function to start editing a field
-        function startEditing(field) {
-            const section = getCurrentSectionWithEdits();
-            if (!section) return;
-            
-            const displayElement = field === 'relation_type' ? 
-                document.getElementById('relationTypeDisplay') : 
-                document.getElementById('relationExplanationDisplay');
-                
-            const textElement = field === 'relation_type' ? 
-                document.getElementById('relationTypeText') : 
-                document.getElementById('relationExplanationText');
-                
-            const editButton = field === 'relation_type' ? 
-                document.getElementById('editRelationTypeBtn') : 
-                document.getElementById('editExplanationBtn');
-            
-            // Save current text
-            const currentText = section[field] || '';
-            
-            // Create input field
-            let input;
-            if (field === 'explanation') {
-                // Use textarea for explanation to handle multi-line text
-                input = document.createElement('textarea');
-                input.className = 'edit-input';
-                input.value = currentText;
-                input.style.flex = '1';
-                input.style.width = '1000px';
-                input.style.height = '250px';
-                input.style.padding = '10px';
-                input.style.fontFamily = 'inherit';
-            } else {
-                // Use regular input for relation_type
-                input = document.createElement('input');
-                input.type = 'text';
-                input.className = 'edit-input';
-                input.value = currentText;
-                input.style.flex = '1';
-                input.style.width = '1000px';
-            }
-            
-            // Create save button
-            const saveButton = document.createElement('button');
-            saveButton.className = 'save-edit';
-            saveButton.innerHTML = '✓';
-            saveButton.title = 'ذخیره';
-            
-            // Create cancel button
-            const cancelButton = document.createElement('button');
-            cancelButton.className = 'cancel-edit';
-            cancelButton.innerHTML = '✕';
-            cancelButton.title = 'لغو';
-            
-            // Create actions container
-            const actionsContainer = document.createElement('div');
-            actionsContainer.className = 'edit-actions';
-            actionsContainer.appendChild(saveButton);
-            actionsContainer.appendChild(cancelButton);
-            
-            // Clear display element and add input and buttons
-            displayElement.innerHTML = '';
-            displayElement.appendChild(input);
-            displayElement.appendChild(actionsContainer);
-            
-            // Focus input
-            input.focus();
-            
-            // Save handler
-            saveButton.addEventListener('click', function() {
-                const newValue = input.value.trim();
-                
-                // Cache the edit
-                const sectionIndex = selectedHadithIndex;
-                if (!editedSections[sectionIndex]) {
-                    editedSections[sectionIndex] = {};
-                }
-                editedSections[sectionIndex][field] = newValue || null;
-                
-                // Update display
-                finishEditing(field, newValue);
-                
-                showToast('موفقیت', 'تغییرات با موفقیت ذخیره شد.', 'success');
-            });
-            
-            // Cancel handler
-            cancelButton.addEventListener('click', function() {
-                finishEditing(field, currentText);
-            });
-            
-            // Also save on Enter key (Ctrl+Enter for textarea)
-            input.addEventListener('keydown', function(e) {
-                if (field === 'explanation' && e.key === 'Enter' && e.ctrlKey) {
-                    // For textarea, use Ctrl+Enter to save
-                    saveButton.click();
-                } else if (field !== 'explanation' && e.key === 'Enter') {
-                    // For input, use Enter to save
-                    saveButton.click();
-                } else if (e.key === 'Escape') {
-                    cancelButton.click();
-                }
-            });
-        }
-        
-        // Function to finish editing and restore display
-        function finishEditing(field, value) {
-            const displayElement = field === 'relation_type' ? 
-                document.getElementById('relationTypeDisplay') : 
-                document.getElementById('relationExplanationDisplay');
-                
-            // Create new text element
-            const newTextElement = document.createElement('span');
-            newTextElement.id = field === 'relation_type' ? 'relationTypeText' : 'relationExplanationText';
-            
-            // Update text
-            const displayText = value ? 
-                (field === 'relation_type' ? `نوع رابطه: ${value}` : `توضیح: ${value}`) : 
-                (field === 'relation_type' ? 'نوع رابطه: -' : 'توضیح: -');
-                
-            newTextElement.textContent = displayText;
-            
-            // Create new edit button
-            const newEditButton = document.createElement('button');
-            newEditButton.id = field === 'relation_type' ? 'editRelationTypeBtn' : 'editExplanationBtn';
-            newEditButton.className = 'edit-button';
-            newEditButton.title = field === 'relation_type' ? 'ویرایش نوع رابطه' : 'ویرایش توضیح';
-            newEditButton.innerHTML = '✏️';
-            
-            // Add event listener to new edit button
-            newEditButton.addEventListener('click', function() {
-                startEditing(field);
-            });
-            
-            // Clear display element and restore original structure
-            displayElement.innerHTML = '';
-            displayElement.appendChild(newTextElement);
-            displayElement.appendChild(newEditButton);
-        }
-        
-        // Function to download modified data
-        async function downloadModifiedData() {
-            // Create a copy of the original data with edits applied
-            const modifiedSections = sections.map((section, index) => {
-                if (editedSections[index]) {
-                    return { ...section, ...editedSections[index], is_edited: true };
-                }
-                return section;
-            });
-            
-            // Save to local storage
-            localStorage.setItem('sections', JSON.stringify(modifiedSections));
-            
-            // Save to backend if logged in
-            await saveDataToBackend();
-            
-            // Create filename with current timestamp
-            const now = new Date();
-            const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
-            const fileName = uploadedFileName ? 
-                `${uploadedFileName.replace('.json', '')}_${timestamp}.json` : 
-                `modified_data_${timestamp}.json`;
-            
-            // Create and download file
-            const dataStr = JSON.stringify(modifiedSections, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            
-            showToast('موفقیت', `فایل با موفقیت دانلود شد و در پایگاه داده ذخیره شد: ${fileName}`, 'success');
-        }
-        
-        // Login/Register handlers
-        async function handleLogin() {
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-            const errorDiv = document.getElementById('loginError');
-            
-            if (!username || !password) {
-                errorDiv.textContent = 'لطفاً نام کاربری و رمز عبور را وارد کنید.';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            
-            try {
-                const response = await apiRequest('/api/login', {
-                    method: 'POST',
-                    body: JSON.stringify({ username, password })
-                });
-                
-                authToken = response.access_token;
-                currentUser = { username: response.username, id: response.user_id };
-                localStorage.setItem('authToken', authToken);
-                
-                document.getElementById('loginModal').style.display = 'none';
-                document.getElementById('loginUsername').value = '';
-                document.getElementById('loginPassword').value = '';
-                errorDiv.style.display = 'none';
-                
-                updateAuthUI();
-                showToast('موفقیت', 'با موفقیت وارد شدید.', 'success');
-            } catch (error) {
-                errorDiv.textContent = error.message || 'نام کاربری یا رمز عبور اشتباه است.';
-                errorDiv.style.display = 'block';
-            }
-        }
-        
-        async function handleRegister() {
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-            const errorDiv = document.getElementById('loginError');
-            
-            if (!username || !password) {
-                errorDiv.textContent = 'لطفاً نام کاربری و رمز عبور را وارد کنید.';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            
-            if (password.length < 6) {
-                errorDiv.textContent = 'رمز عبور باید حداقل ۶ کاراکتر باشد.';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            
-            try {
-                await apiRequest('/api/register', {
-                    method: 'POST',
-                    body: JSON.stringify({ username, password })
-                });
-                
-                // After registration, automatically login
-                await handleLogin();
-            } catch (error) {
-                errorDiv.textContent = error.message || 'خطا در ثبت‌نام. ممکن است نام کاربری تکراری باشد.';
-                errorDiv.style.display = 'block';
-            }
-        }
-        
-        function handleLogout() {
-            authToken = null;
-            currentUser = null;
-            localStorage.removeItem('authToken');
-            updateAuthUI();
-            showToast('موفقیت', 'با موفقیت خارج شدید.', 'success');
-        }
-        
-
-    </script>
-</body>
-</html>
