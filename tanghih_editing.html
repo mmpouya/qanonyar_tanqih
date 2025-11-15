@@ -68,21 +68,21 @@
         </div>
         <!-- Navigation Buttons (Top) -->
         <div id="navButtonsTop" class="nav-buttons beautiful-nav" style="justify-content:center; margin-bottom:0.5rem;">
-            <button id="prevHadithBtn" class="button-nav beautiful-nav-btn">
+            <button id="prevSectionBtn" class="button-nav beautiful-nav-btn">
                 <span class="nav-icon">&#8592;</span>
                 <span>قبلی</span>
             </button>
-            <button id="nextHadithBtn" class="button-nav beautiful-nav-btn">
+            <button id="nextSectionBtn" class="button-nav beautiful-nav-btn">
                 <span>بعدی</span>
                 <span class="nav-icon">&#8594;</span>
             </button>
         </div>
-        <!-- Hadith Selector Section -->
-        <div id="hadithSelectorContainer" style="display:none; margin-bottom:1rem;align-items:center;gap:1rem;">
+        <!-- Section Selector Section -->
+        <div id="sectionSelectorContainer" style="display:none; margin-bottom:1rem;align-items:center;gap:1rem;">
             <h3 style="color:var(--primary-color); margin-bottom:0.5rem;">۲. انتخاب بخش</h3>
-            <label for="hadithSelector">انتخاب بخش:</label>
-            <select id="hadithSelector"></select>
-            <span id="hadithCounter" class="hadith-counter" style="margin-right:1rem;"></span>
+            <label for="sectionSelector">انتخاب بخش:</label>
+            <select id="sectionSelector"></select>
+            <span id="sectionCounter" class="section-counter" style="margin-right:1rem;"></span>
         </div>
         <!-- Filter Section -->
         <div id="filterSection" style="display:none; margin-bottom:1rem; padding:1rem; background:var(--bg-color); border-radius:8px;">
@@ -164,9 +164,9 @@
         <div id="progressBarContainer" style="width:100%;height:8px;background:#e3f2fd;border-radius:4px;margin-bottom:1rem;display:none;">
             <div id="progressBar" style="height:100%;background:#1e88e5;width:0%;border-radius:4px;transition:width 0.3s;"></div>
         </div>
-        <!-- Hadith Display Section -->
+        <!-- Section Display Section -->
         <h3 style="color:var(--primary-color); margin-bottom:0.5rem;">۳. نمایش و ویرایش</h3>
-        <div id="hadithDisplay">
+        <div id="sectionDisplay">
             <!-- Content will be dynamically inserted here -->
         </div>
         <!-- Floating Back to Top Button -->
@@ -195,11 +195,11 @@
         </div>
         <!-- Navigation Buttons (Bottom) -->
         <div id="navButtonsBottom" class="nav-buttons beautiful-nav" style="justify-content:center; margin-top:0.5rem;">
-            <button id="backBtnBottom" class="button button-secondary beautiful-nav-btn" style="min-width:100px;" onclick="navigateHadith(-1)">
+            <button id="backBtnBottom" class="button button-secondary beautiful-nav-btn" style="min-width:100px;" onclick="navigateSection(-1)">
                 <span class="nav-icon">&#8592;</span>
                 <span>قبلی</span>
             </button>
-            <button id="nextBtnBottom" class="button button-secondary beautiful-nav-btn" style="min-width:100px;" onclick="navigateHadith(1)">
+            <button id="nextBtnBottom" class="button button-secondary beautiful-nav-btn" style="min-width:100px;" onclick="navigateSection(1)">
                 <span>بعدی</span>
                 <span class="nav-icon">&#8594;</span>
             </button>
@@ -207,7 +207,7 @@
     </div>
     <script>
         let sections = [];
-        let selectedHadithIndex = 0;
+        let selectedSectionIndex = 0;
         let uploadedFileName = "";
         // Filter variables
         let filteredSections = [];
@@ -262,19 +262,19 @@
                     }
                     sections = raw;
                     filteredSections = [...raw]; // Initialize filtered sections with all data
-                    selectedHadithIndex = 0;
+                    selectedSectionIndex = 0;
                     document.getElementById('fileUploadOverlay').style.display = 'none';
                     setUIEnabled(true);
-                    populateHadithSelector();
+                    populateSectionSelector();
                     populateFilterOptions(); // Populate filter options
                     populateModalFilterOptions(); // Populate modal filter options
-                    document.getElementById('hadithSelectorContainer').style.display = 'flex';
+                    document.getElementById('sectionSelectorContainer').style.display = 'flex';
                     document.getElementById('filterSection').style.display = 'block'; // Show filter section
                     document.getElementById('progressBarContainer').style.display = 'block';
                     // Show filter modal instead of directly showing data
                     document.getElementById('filterModal').style.display = 'flex';
                     // Hide main content until filters are applied
-                    document.getElementById('hadithDisplay').style.display = 'none';
+                    document.getElementById('sectionDisplay').style.display = 'none';
                     document.getElementById('relationTypeDisplay').style.display = 'none';
                     document.getElementById('relationExplanationDisplay').style.display = 'none';
                     document.getElementById('navButtonsTop').style.display = 'none';
@@ -303,19 +303,19 @@
                     }
                     sections = raw;
                     filteredSections = [...raw]; // Initialize filtered sections with all data
-                    selectedHadithIndex = 0;
+                    selectedSectionIndex = 0;
                     document.getElementById('fileUploadOverlay').style.display = 'none';
                     setUIEnabled(true);
-                    populateHadithSelector();
+                    populateSectionSelector();
                     populateFilterOptions(); // Populate filter options
                     populateModalFilterOptions(); // Populate modal filter options
-                    document.getElementById('hadithSelectorContainer').style.display = 'flex';
+                    document.getElementById('sectionSelectorContainer').style.display = 'flex';
                     document.getElementById('filterSection').style.display = 'block'; // Show filter section
                     document.getElementById('progressBarContainer').style.display = 'block';
                     // Show filter modal instead of directly showing data
                     document.getElementById('filterModal').style.display = 'flex';
                     // Hide main content until filters are applied
-                    document.getElementById('hadithDisplay').style.display = 'none';
+                    document.getElementById('sectionDisplay').style.display = 'none';
                     document.getElementById('relationTypeDisplay').style.display = 'none';
                     document.getElementById('relationExplanationDisplay').style.display = 'none';
                     document.getElementById('navButtonsTop').style.display = 'none';
@@ -471,9 +471,9 @@
             });
             
             // Update UI
-            selectedHadithIndex = 0;
-            populateHadithSelector();
-            displayHadith();
+            selectedSectionIndex = 0;
+            populateSectionSelector();
+            displaySection();
             updateNavButtons();
             
             showToast('موفقیت', 'فیلترها با موفقیت اعمال شدند.', 'success');
@@ -492,9 +492,9 @@
             filteredSections = [...sections];
             
             // Update UI
-            selectedHadithIndex = 0;
-            populateHadithSelector();
-            displayHadith();
+            selectedSectionIndex = 0;
+            populateSectionSelector();
+            displaySection();
             updateNavButtons();
             
             showToast('موفقیت', 'فیلترها حذف شدند.', 'success');
@@ -576,7 +576,7 @@
             
             // Hide modal and show data
             document.getElementById('filterModal').style.display = 'none';
-            document.getElementById('hadithDisplay').style.display = 'block';
+            document.getElementById('sectionDisplay').style.display = 'block';
             document.getElementById('relationTypeDisplay').style.display = 'block';
             document.getElementById('relationExplanationDisplay').style.display = 'block';
             document.getElementById('navButtonsTop').style.display = 'flex';
@@ -587,9 +587,9 @@
             document.getElementById('filterButtonSection').style.display = 'block';
             
             // Update UI
-            selectedHadithIndex = 0;
-            populateHadithSelector();
-            displayHadith();
+            selectedSectionIndex = 0;
+            populateSectionSelector();
+            displaySection();
             updateNavButtons();
             
             showToast('موفقیت', 'فیلترها با موفقیت اعمال شدند.', 'success');
@@ -598,7 +598,7 @@
         function skipFilters() {
             // Hide modal and show all data
             document.getElementById('filterModal').style.display = 'none';
-            document.getElementById('hadithDisplay').style.display = 'block';
+            document.getElementById('sectionDisplay').style.display = 'block';
             document.getElementById('relationTypeDisplay').style.display = 'block';
             document.getElementById('relationExplanationDisplay').style.display = 'block';
             document.getElementById('navButtonsTop').style.display = 'flex';
@@ -618,43 +618,43 @@
             document.getElementById('filterRelationType').selectedIndex = -1;
             
             // Update UI
-            selectedHadithIndex = 0;
-            populateHadithSelector();
-            displayHadith();
+            selectedSectionIndex = 0;
+            populateSectionSelector();
+            displaySection();
             updateNavButtons();
         }
         
-        function navigateHadith(direction) {
+        function navigateSection(direction) {
             if (!sections.length) return;
-            let newIndex = selectedHadithIndex + direction;
+            let newIndex = selectedSectionIndex + direction;
             if (newIndex < 0) newIndex = 0;
             if (newIndex >= sections.length) newIndex = sections.length - 1;
-            if (newIndex !== selectedHadithIndex) {
-                selectedHadithIndex = newIndex;
-                populateHadithSelector();
-                displayHadith();
+            if (newIndex !== selectedSectionIndex) {
+                selectedSectionIndex = newIndex;
+                populateSectionSelector();
+                displaySection();
             }
             updateNavButtons();
         }
         function updateNavButtons() {
-            const backBtnTop = document.getElementById('prevHadithBtn');
-            const nextBtnTop = document.getElementById('nextHadithBtn');
+            const backBtnTop = document.getElementById('prevSectionBtn');
+            const nextBtnTop = document.getElementById('nextSectionBtn');
             const backBtnBottom = document.getElementById('backBtnBottom');
             const nextBtnBottom = document.getElementById('nextBtnBottom');
             if (!sections.length) {
                 [backBtnTop, nextBtnTop, backBtnBottom, nextBtnBottom].forEach(btn => { if (btn) btn.disabled = true; });
                 return;
             }
-            const atStart = selectedHadithIndex === 0;
-            const atEnd = selectedHadithIndex === sections.length - 1;
+            const atStart = selectedSectionIndex === 0;
+            const atEnd = selectedSectionIndex === sections.length - 1;
             if (backBtnTop) backBtnTop.disabled = atStart;
             if (nextBtnTop) nextBtnTop.disabled = atEnd;
             if (backBtnBottom) backBtnBottom.disabled = atStart;
             if (nextBtnBottom) nextBtnBottom.disabled = atEnd;
         }
-        // Modify populateHadithSelector to use filteredSections
-        function populateHadithSelector() {
-            const selector = document.getElementById('hadithSelector');
+        // Modify populateSectionSelector to use filteredSections
+        function populateSectionSelector() {
+            const selector = document.getElementById('sectionSelector');
             selector.innerHTML = '';
             filteredSections.forEach((section, i) => {
                 const option = document.createElement('option');
@@ -668,27 +668,27 @@
                 option.textContent = `مقایسه ${section1Id} و ${section2Id}${hasRelation}`;
                 selector.appendChild(option);
             });
-            selector.value = selectedHadithIndex;
+            selector.value = selectedSectionIndex;
             selector.onchange = function() {
-                selectedHadithIndex = parseInt(this.value, 10);
-                displayHadith();
+                selectedSectionIndex = parseInt(this.value, 10);
+                displaySection();
                 updateNavButtons();
             };
             updateNavButtons();
         }
-        // Modify getCurrentHadith to use filteredSections
-        function getCurrentHadith() {
-            return filteredSections[selectedHadithIndex] || null;
+        // Modify getCurrentSection to use filteredSections
+        function getCurrentSection() {
+            return filteredSections[selectedSectionIndex] || null;
         }
-        function displayHadith() {
+        function displaySection() {
             try {
                 
                 const section = getCurrentSectionWithEdits();
-                console.log('Displaying section at index', selectedHadithIndex, ':', section);
-                const hadithContainer = document.getElementById('hadithDisplay');
-                hadithContainer.innerHTML = '';
+                console.log('Displaying section at index', selectedSectionIndex, ':', section);
+                const sectionContainer = document.getElementById('sectionDisplay');
+                sectionContainer.innerHTML = '';
                 if (!section) {
-                    hadithContainer.innerHTML = '<div style="color:#f44336;">هیچ بخشی برای نمایش وجود ندارد.</div>';
+                    sectionContainer.innerHTML = '<div style="color:#f44336;">هیچ بخشی برای نمایش وجود ندارد.</div>';
                     return;
                 }
                 // Collapsible Section 1 Content
@@ -709,7 +709,7 @@
                 section1Content.innerHTML = (section.section_1_content || '(متن بخش اول موجود نیست)').replace(/\n/g, '<br>');
                 section1Div.appendChild(section1Header);
                 section1Div.appendChild(section1Content);
-                hadithContainer.appendChild(section1Div);
+                sectionContainer.appendChild(section1Div);
                 // Collapsible Section 1 Rules
                 const section1RulesDiv = document.createElement('div');
                 section1RulesDiv.style.marginBottom = '0.5rem';
@@ -724,7 +724,7 @@
                 section1RulesContent.innerHTML = (section.section_1_rules || '').replace(/\n/g, '<br>');
                 section1RulesDiv.appendChild(section1RulesHeader);
                 section1RulesDiv.appendChild(section1RulesContent);
-                hadithContainer.appendChild(section1RulesDiv);
+                sectionContainer.appendChild(section1RulesDiv);
                 
                 // Collapsible Section 2 Content
                 const section2Div = document.createElement('div');
@@ -744,7 +744,7 @@
                 section2Content.innerHTML = (section.section_2_content || '(متن بخش دوم موجود نیست)').replace(/\n/g, '<br>');
                 section2Div.appendChild(section2Header);
                 section2Div.appendChild(section2Content);
-                hadithContainer.appendChild(section2Div);
+                sectionContainer.appendChild(section2Div);
                 
                 // Collapsible Section 2 Rules
                 const section2RulesDiv = document.createElement('div');
@@ -760,7 +760,7 @@
                 section2RulesContent.innerHTML = (section.section_2_rules || '').replace(/\n/g, '<br>');
                 section2RulesDiv.appendChild(section2RulesHeader);
                 section2RulesDiv.appendChild(section2RulesContent);
-                hadithContainer.appendChild(section2RulesDiv);
+                sectionContainer.appendChild(section2RulesDiv);
                 
                 // Display has_relationship value prominently
                 const hasRelationshipDiv = document.createElement('div');
@@ -785,7 +785,7 @@
                     hasRelationshipDiv.textContent = 'دارای رابطه: نامشخص';
                 }
                 
-                hadithContainer.appendChild(hasRelationshipDiv);
+                sectionContainer.appendChild(hasRelationshipDiv);
                 
                 // Show relation_type and explanation in dedicated display areas
                 const relationTypeText = document.getElementById('relationTypeText');
@@ -823,7 +823,7 @@
                 relationshipContent.innerHTML = relationshipText.replace(/\n/g, '<br>');
                 relationshipDiv.appendChild(relationshipHeader);
                 relationshipDiv.appendChild(relationshipContent);
-                hadithContainer.appendChild(relationshipDiv);
+                sectionContainer.appendChild(relationshipDiv);
                 
                 // Collapsible logic
                 [section1Header, section1RulesHeader, section2Header, section2RulesHeader, relationshipHeader].forEach((header, idx) => {
@@ -840,19 +840,19 @@
                     });
                 });
             } catch (err) {
-                console.error('Error in displayHadith:', err);
-                const hadithContainer = document.getElementById('hadithDisplay');
-                hadithContainer.innerHTML = '<div style="color:#f44336;">خطا در نمایش داده‌ها. لطفاً فایل را بررسی کنید یا با پشتیبانی تماس بگیرید.</div>';
+                console.error('Error in displaySection:', err);
+                const sectionContainer = document.getElementById('sectionDisplay');
+                sectionContainer.innerHTML = '<div style="color:#f44336;">خطا در نمایش داده‌ها. لطفاً فایل را بررسی کنید یا با پشتیبانی تماس بگیرید.</div>';
             }
             updateNavButtons();
             // Update counter and progress bar
-            const counter = document.getElementById('hadithCounter');
+            const counter = document.getElementById('sectionCounter');
             if (counter && filteredSections.length) {
-                counter.textContent = `بخش ${selectedHadithIndex+1} از ${filteredSections.length}`;
+                counter.textContent = `بخش ${selectedSectionIndex+1} از ${filteredSections.length}`;
             }
             const progressBar = document.getElementById('progressBar');
             if (progressBar && filteredSections.length) {
-                progressBar.style.width = `${((selectedHadithIndex+1)/filteredSections.length)*100}%`;
+                progressBar.style.width = `${((selectedSectionIndex+1)/filteredSections.length)*100}%`;
             }
         }
         // On load, show overlay and disable UI
@@ -860,11 +860,11 @@
             setUIEnabled(false);
             document.getElementById('fileUploadOverlay').style.display = 'flex';
             // Fix: Add event listeners for top navigation buttons
-            document.getElementById('prevHadithBtn').addEventListener('click', function() {
-                navigateHadith(-1);
+            document.getElementById('prevSectionBtn').addEventListener('click', function() {
+                navigateSection(-1);
             });
-            document.getElementById('nextHadithBtn').addEventListener('click', function() {
-                navigateHadith(1);
+            document.getElementById('nextSectionBtn').addEventListener('click', function() {
+                navigateSection(1);
             });
             
             // Add event listeners for filter buttons
@@ -949,11 +949,11 @@
         
         // Function to get current section with edits applied
         function getCurrentSectionWithEdits() {
-            const section = getCurrentHadith();
+            const section = getCurrentSection();
             if (!section) return null;
             
             // Apply cached edits if they exist
-            const sectionIndex = selectedHadithIndex;
+            const sectionIndex = selectedSectionIndex;
             if (editedSections[sectionIndex]) {
                 return { ...section, ...editedSections[sectionIndex] };
             }
@@ -1034,7 +1034,7 @@
                 const newValue = input.value.trim();
                 
                 // Cache the edit
-                const sectionIndex = selectedHadithIndex;
+                const sectionIndex = selectedSectionIndex;
                 if (!editedSections[sectionIndex]) {
                     editedSections[sectionIndex] = {};
                 }

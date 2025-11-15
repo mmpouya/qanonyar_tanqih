@@ -125,7 +125,7 @@ select:focus {
     box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.2);
 }
 
-#hadithDisplay {
+#sectionDisplay {
     margin-top: 1.5rem;
     min-height: 200px;
     background: var(--bg-color);
@@ -278,7 +278,7 @@ input[type="checkbox"] {
     background: var(--primary-dark);
 }
 
-.hadith-content {
+.section-content {
     font-size: 1.1rem;
     line-height: 1.8;
     margin: 1rem 0;
@@ -287,13 +287,13 @@ input[type="checkbox"] {
     border-radius: 8px;
 }
 
-.hadith-arabic {
+.section-arabic {
     font-size: 1.2rem;
     color: var(--primary-color);
     margin-top: 1rem;
 }
 
-.delete-hadith {
+.delete-section {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -306,11 +306,11 @@ input[type="checkbox"] {
     transition: all 0.3s ease;
 }
 
-.delete-hadith:hover {
+.delete-section:hover {
     background: #d32f2f;
 }
 
-.hadith-counter {
+.section-counter {
     font-size: 1.1rem;
     color: var(--primary-color);
     font-weight: 500;
@@ -657,13 +657,13 @@ input[type="checkbox"] {
     min-width: 100px;
 }
 
-#hadithSelectorContainer {
+#sectionSelectorContainer {
     margin-bottom: 1rem;
     align-items: center;
     gap: 1rem;
 }
 
-#hadithCounter {
+#sectionCounter {
     margin-right: 1rem;
 }
 

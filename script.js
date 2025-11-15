@@ -2,8 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Element selections
     const jsonFileInput = document.getElementById('jsonFile');
     const jsonFileOverlayInput = document.getElementById('jsonFileOverlay');
-    const hadithSelector = document.getElementById('hadithSelector');
-    const hadithDisplay = document.getElementById('hadithDisplay');
+    const sectionSelector = document.getElementById('sectionSelector');
+    const sectionDisplay = document.getElementById('sectionDisplay');
     const newPropContentInput = document.getElementById('newPropContent');
     const darkModeToggle = document.getElementById('darkModeToggle');
     const darkModeIcon = document.getElementById('darkModeIcon');
@@ -13,17 +13,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeGuideModal = document.getElementById('closeGuideModal');
     const fileUploadOverlay = document.getElementById('fileUploadOverlay');
     const mainContainer = document.getElementById('mainContainer');
-    const hadithSelectorContainer = document.getElementById('hadithSelectorContainer');
+    const sectionSelectorContainer = document.getElementById('sectionSelectorContainer');
     const progressBarContainer = document.getElementById('progressBarContainer');
     const navButtonsTop = document.getElementById('navButtonsTop');
 
     let sections = [];
-    let currentHadithIndex = -1;
+    let currentSectionIndex = -1;
 
     // --- Event Listeners ---
     jsonFileInput.addEventListener('change', handleFileUpload);
     jsonFileOverlayInput.addEventListener('change', handleFileUpload);
-    hadithSelector.addEventListener('change', displayHadith);
+    sectionSelector.addEventListener('change', displaySection);
     darkModeToggle.addEventListener('click', toggleDarkMode);
     guideBtn.addEventListener('click', () => guideModal.style.display = 'flex');
     closeGuideModal.addEventListener('click', () => guideModal.style.display = 'none');
@@ -40,10 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     sections = JSON.parse(e.target.result);
                     if (!Array.isArray(sections)) throw new Error("JSON is not an array.");
-                    populateHadithSelector();
+                    populateSectionSelector();
                     fileUploadOverlay.classList.add('hidden');
                     mainContainer.classList.remove('disabled-ui');
-                    hadithSelectorContainer.style.display = 'flex';
+                    sectionSelectorContainer.style.display = 'flex';
                     progressBarContainer.style.display = 'block';
                     navButtonsTop.style.display = 'flex';
                     showToast('موفقیت', 'فایل با موفقیت بارگذاری شد.', 'success');
@@ -55,8 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function populateHadithSelector() {
-        hadithSelector.innerHTML = '';
+    function populateSectionSelector() {
+        sectionSelector.innerHTML = '';
         sections.forEach((section, index) => {
             const option = document.createElement('option');
             option.value = index;
@@ -64,22 +64,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const section1Id = section.section_1_id || `بخش ۱`;
             const section2Id = section.section_2_id || `بخش ۲`;
             option.textContent = `مقایسه ${section1Id} و ${section2Id}`;
-            hadithSelector.appendChild(option);
+            sectionSelector.appendChild(option);
         });
-        currentHadithIndex = 0;
-        displayHadith();
+        currentSectionIndex = 0;
+        displaySection();
     }
 
-    function displayHadith() {
-        currentHadithIndex = parseInt(hadithSelector.value);
-        if (currentHadithIndex >= 0 && currentHadithIndex < sections.length) {
-            const section = sections[currentHadithIndex];
+    function displaySection() {
+        currentSectionIndex = parseInt(sectionSelector.value);
+        if (currentSectionIndex >= 0 && currentSectionIndex < sections.length) {
+            const section = sections[currentSectionIndex];
             // Function to convert \n to <br> for HTML display
             const formatText = (text) => {
                 if (!text) return '';
                 return text.replace(/\n/g, '<br>');
             };
-            hadithDisplay.innerHTML = `
+            sectionDisplay.innerHTML = `
                 <div class="section-content">
                     <h3>بخش اول</h3>
                     <p>${formatText(section.section_1_content) || '(محتوای بخش اول موجود نیست)'}</p>
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p>${formatText(section.reason || section.explanation) || '(تحلیل رابطه موجود نیست)'}</p>
                 </div>
             `;
-            updateHadithCounter();
+            updateSectionCounter();
             updateProgressBar();
         }
     }
@@ -113,26 +113,26 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('هشدار', 'افزودن گزاره در ساختار جدید پشتیبانی نمی‌شود.', 'warning');
     }
 
-    window.navigateHadith = function(direction) {
-        let newIndex = currentHadithIndex + direction;
+    window.navigateSection = function(direction) {
+        let newIndex = currentSectionIndex + direction;
         if (newIndex >= 0 && newIndex < sections.length) {
-            currentHadithIndex = newIndex;
-            hadithSelector.value = currentHadithIndex;
-            displayHadith();
+            currentSectionIndex = newIndex;
+            sectionSelector.value = currentSectionIndex;
+            displaySection();
         }
     }
 
-    function updateHadithCounter() {
-        const counter = document.getElementById('hadithCounter');
+    function updateSectionCounter() {
+        const counter = document.getElementById('sectionCounter');
         if (counter) {
-            counter.textContent = `(${currentHadithIndex + 1} از ${sections.length})`;
+            counter.textContent = `(${currentSectionIndex + 1} از ${sections.length})`;
         }
     }
 
     function updateProgressBar() {
         const progressBar = document.getElementById('progressBar');
         if (progressBar) {
-            const progress = sections.length > 0 ? ((currentHadithIndex + 1) / sections.length) * 100 : 0;
+            const progress = sections.length > 0 ? ((currentSectionIndex + 1) / sections.length) * 100 : 0;
             progressBar.style.width = `${progress}%`;
         }
     }
@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial state setup
     mainContainer.classList.add('disabled-ui');
-    hadithSelectorContainer.style.display = 'none';
+    sectionSelectorContainer.style.display = 'none';
     progressBarContainer.style.display = 'none';
     navButtonsTop.style.display = 'none';
 });

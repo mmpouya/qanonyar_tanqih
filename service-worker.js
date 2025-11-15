@@ -1,4 +1,4 @@
-const CACHE_NAME = "hadith-keywords-cache-v4"; // نسخه کش را تغییر دادم
+const CACHE_NAME = "section-keywords-cache-v4"; // نسخه کش را تغییر دادم
 const FILES_TO_CACHE = [
     "./",
     "./index.html",
