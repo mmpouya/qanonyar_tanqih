@@ -82,6 +82,7 @@
             <h3 style="color:var(--primary-color); margin-bottom:0.5rem;">۲. انتخاب بخش</h3>
             <label for="sectionSelector">انتخاب بخش:</label>
             <select id="sectionSelector"></select>
+            <button id="copySectionIdsBtn" class="button button-secondary" style="min-width:120px; padding: 0.5rem 1rem;" title="کپی شناسه‌های بخش انتخاب شده">📋 کپی شناسه‌ها</button>
             <span id="sectionCounter" class="section-counter" style="margin-right:1rem;"></span>
         </div>
         <!-- Filter Section -->
@@ -855,10 +856,49 @@
                 progressBar.style.width = `${((selectedSectionIndex+1)/filteredSections.length)*100}%`;
             }
         }
+        // Add this function to the script section
+        // Function to copy selected section IDs to clipboard
+        function copySectionIdsToClipboard() {
+            try {
+                const section = getCurrentSection();
+                if (!section) {
+                    showToast('خطا', 'هیچ بخشی انتخاب نشده است.', 'error');
+                    return;
+                }
+                
+                // Extract section IDs
+                const section1Id = section.section_1_id || 'بخش ۱';
+                const section2Id = section.section_2_id || 'بخش ۲';
+                
+                // Format the IDs for clipboard
+                const idsText = `${section1Id} ${section2Id}`;
+                
+                // Copy to clipboard
+                navigator.clipboard.writeText(idsText).then(() => {
+                    showToast('موفقیت', 'شناسه‌های بخش‌ها با موفقیت کپی شدند.', 'success');
+                }).catch(err => {
+                    showToast('خطا', 'خطا در کپی کردن شناسه‌ها: ' + err, 'error');
+                });
+            } catch (error) {
+                showToast('خطا', 'خطا در کپی کردن شناسه‌ها: ' + error, 'error');
+            }
+        }
+        
         // On load, show overlay and disable UI
         window.addEventListener('DOMContentLoaded', function() {
             setUIEnabled(false);
             document.getElementById('fileUploadOverlay').style.display = 'flex';
+            // Fix: Add event listeners for top navigation buttons
+            document.getElementById('prevSectionBtn').addEventListener('click', function() {
+                navigateSection(-1);
+            });
+            document.getElementById('nextSectionBtn').addEventListener('click', function() {
+                navigateSection(1);
+            });
+            
+            // Add event listener for copy section IDs button
+            document.getElementById('copySectionIdsBtn').addEventListener('click', copySectionIdsToClipboard);
+            
             // Fix: Add event listeners for top navigation buttons
             document.getElementById('prevSectionBtn').addEventListener('click', function() {
                 navigateSection(-1);
@@ -905,6 +945,9 @@
             document.getElementById('editExplanationBtn').addEventListener('click', function() {
                 startEditing('explanation');
             });
+            
+            // Add event listener for copy section IDs button
+            document.getElementById('copySectionIdsBtn').addEventListener('click', copySectionIdsToClipboard);
             
             // Add event listener for save and download button
             document.getElementById('saveDownloadBtn').addEventListener('click', downloadModifiedData);
