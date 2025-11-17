@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ویرایشگر مواد قانونی</title>
+    <!-- 🔹 اضافه کردن manifest.json برای PWA -->
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("service-worker.js")
+                .then(() => console.log("✅ Service Worker ثبت شد و سایت آماده آفلاین است!"))
+                .catch((error) => console.log("❌ خطا در ثبت Service Worker:", error));
+        }
+    </script>
+        
+    <!-- سایر لینک‌ها و استایل‌های سایت -->
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700&display=swap');
+        
+        :root {
+            --primary-color: #1e88e5;
+            --primary-dark: #1565c0;
+            --secondary-color: #00acc1;
+            --text-color: #333;
+            --bg-color: #f5f5f5;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --success-color: #4caf50;
+            --danger-color: #f44336;
+            --warning-color: #ff9800;
+        }
+        
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            text-align: center;
+            direction: rtl;
+            background: linear-gradient(135deg, #1e88e5, #00acc1);
+            background-size: cover;
+            color: white;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1300px;
+            height: auto;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 20px 20px rgba(0, 0, 0, 0.1);
+            color: var(--text-color);
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin: 2rem auto;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .button {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-family: 'Vazirmatn', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .button-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .button-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .button-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .button-secondary:hover {
+            background: #00838f;
+            transform: translateY(-2px);
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"], select {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.8rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-family: 'Vazirmatn', sans-serif;
+            text-align: right;
+            font-size: 1rem;
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.2);
+        }
+
+        #articleDisplay {
+            margin-top: 1.5rem;
+            min-height: 200px;
+            background: var(--bg-color);
+            padding: 1.5rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .proposition-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            transition: all 0.3s ease;
+            cursor: move;
+            position: relative;
+        }
+
+        .proposition-card:hover {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .proposition-card.dragging {
+            opacity: 0.5;
+            background: var(--bg-color);
+        }
+
+        .drag-handle {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-color);
+            cursor: move;
+            padding: 5px;
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+
+        .proposition-card:hover .drag-handle {
+            opacity: 1;
+        }
+
+        .proposition-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-right: 30px;
+        }
+
+        .type-section {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: var(--bg-color);
+            border-radius: 6px;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-color);
+        }
+
+        #darkModeToggle {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            padding: 0.8rem 1.2rem;
+            font-size: 1rem;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #darkModeToggle:hover {
+            transform: translateY(-2px);
+        }
+
+        .dark-mode {
+            --primary-color: #64b5f6;
+            --primary-dark: #42a5f5;
+            --secondary-color: #4dd0e1;
+            --text-color: #e0e0e0;
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --border-color: #333;
+            background: linear-gradient(135deg, #121212, #1e1e1e);
+        }
+
+        .dark-mode .container {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .dark-mode .proposition-card {
+            background: #2d2d2d;
+        }
+
+        .dark-mode .type-section {
+            background: #2d2d2d;
+        }
+
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .file-upload input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-upload-label {
+            display: block;
+            padding: 1rem;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-label:hover {
+            background: var(--primary-dark);
+        }
+
+        .article-content {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: var(--bg-color);
+            border-radius: 8px;
+        }
+
+        .delete-article {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            padding: 0.5rem;
+            background: var(--danger-color);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .delete-article:hover {
+            background: #d32f2f;
+        }
+
+        .article-counter {
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            font-weight: 500;
+            margin: 1rem 0;
+        }
+
+        /* Toast Notification Styles */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .toast {
+            background: var(--card-bg);
+            color: var(--text-color);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 300px;
+            max-width: 400px;
+            transform: translateX(120%);
+            transition: transform 0.3s ease-in-out;
+            border-right: 4px solid var(--primary-color);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-right-color: var(--success-color);
+        }
+
+        .toast.error {
+            border-right-color: var(--danger-color);
+        }
+
+        .toast.warning {
+            border-right-color: var(--warning-color);
+        }
+
+        .toast-icon {
+            font-size: 1.5rem;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .toast-message {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                width: 95%;
+                padding: 1rem;
+            }
+
+            .input-container {
+                flex-direction: column;
+            }
+
+            input[type="text"], select {
+                width: 100%;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+
+            .button {
+                width: 100%;
+            }
+        }
+
+        .edit-button {
+            background: transparent;
+            color: #666;
+            border: 1px solid #666;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            margin-right: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+        }
+
+        .edit-button:hover {
+            background: #666;
+            color: white;
+            transform: translateY(-1px);
+            opacity: 1;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .edit-input {
+            padding: 6px 12px;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            margin-right: 8px;
+            font-family: 'Vazirmatn', sans-serif;
+            direction: rtl;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            width: 200px;
+        }
+
+        .edit-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.2);
+        }
+
+        .edit-actions {
+            display: inline-flex;
+            gap: 6px;
+            margin-right: 8px;
+        }
+
+        .save-edit, .cancel-edit {
+            padding: 4px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .save-edit {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .cancel-edit {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .save-edit:hover, .cancel-edit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>ویرایشگر مواد قانونی</h2>
+        <button id="darkModeToggle" class="button button-secondary" 
+            data-light="☀️ حالت روز" 
+            data-dark="🌙 حالت شب">
+            🌙 حالت شب
+        </button>
+
+        <div class="toast-container" id="toastContainer"></div>
+
+        <div class="file-upload">
+            <label class="file-upload-label">
+                <span>📁 انتخاب فایل JSON</span>
+            <input type="file" id="jsonFile" accept="application/json">
+            </label>
+        </div>
+
+        <div id="articleCounter" class="article-counter"></div>
+        
+        <div id="articleDisplay">
+            <!-- Content will be dynamically inserted here -->
+        </div>
+
+        <div class="input-container">
+            <input type="text" id="newProposition" placeholder="متن گزاره جدید را وارد کنید" class="text-input">
+            
+            <input type="text" id="newMainType" placeholder="نوع اصلی (مثال: الزام قانونی)" class="text-input">
+            
+            <button class="button button-primary" onclick="addProposition()">
+                <span>➕</span>
+                <span>اضافه کن</span>
+            </button>
+        </div>
+
+        <div class="buttons">
+            <button id="saveProgressBtn" class="button button-secondary" onclick="saveProgress()" style="display: none;">
+                <span>💾</span>
+                <span>ذخیره موقت</span>
+            </button>
+            <button id="saveBtn" class="button button-primary" onclick="downloadData()" style="display: none;">
+                <span>💾</span>
+                <span>ذخیره و دانلود</span>
+            </button>
+            <button id="nextBtn" class="button button-primary" onclick="nextArticle()" style="display: none;">
+                <span>➡️</span>
+                <span>بعدی</span>
+            </button>
+            <button id="prevBtn" class="button button-secondary" onclick="prevArticle()" style="display: none;">
+                <span>⬅️</span>
+                <span>قبلی</span>
+            </button>
+        </div>
+    </div>
+ 
+    
+
+
+    
+    <script>
+        let uploadedFileName = ""; // ✅ ذخیره نام فایل ورودی
+        let articles = [];
+        let articleKeys = [];
+        let currentIndex = 0;
+        let selectedPropositions = {}; // {articleIndex: [propositionIndex, ...]}
+        let deletedArticles = {};
+        let shouldScroll = true;
+
+        // Toast Notification Functions
+        function showToast(title, message, type = 'success') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️'
+            };
+
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type]}</span>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+            `;
+
+            toastContainer.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 100);
+
+            // Remove toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        document.getElementById('jsonFile').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            uploadedFileName = file.name;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const raw = JSON.parse(e.target.result);
+                    // Check if it's a progress file
+                    if (raw && raw.__progress_save__) {
+                        // Restore all state
+                        articles = raw.articles;
+                        articleKeys = raw.articleKeys;
+                        currentIndex = raw.currentIndex;
+                        selectedPropositions = raw.selectedPropositions;
+                        deletedArticles = raw.deletedArticles;
+                        uploadedFileName = raw.uploadedFileName;
+                        showToast('موفقیت', 'پیشرفت قبلی با موفقیت بارگذاری شد!', 'success');
+                        displayArticle();
+                        document.activeElement.blur();
+                        document.getElementById('nextBtn').focus();
+                        document.getElementById('saveProgressBtn').style.display = 'inline-block';
+                        return;
+                    }
+                    if (!raw || typeof raw !== 'object') {
+                        showToast('خطا', 'ساختار فایل JSON معتبر نیست.', 'error');
+                        return;
+                    }
+                    articleKeys = Object.keys(raw);
+                    articles = articleKeys.map(key => ({...raw[key], id: key}));
+                    if (!Array.isArray(articles) || articles.length === 0) {
+                        showToast('خطا', 'فایل JSON معتبر نیست یا موادی در آن وجود ندارد.', 'error');
+                        return;
+                    }
+                } catch (error) {
+                    showToast('خطا', 'خطا در پردازش فایل JSON. لطفاً یک فایل معتبر انتخاب کنید.', 'error');
+                    return;
+                }
+                showToast('موفقیت', 'فایل با موفقیت بارگذاری شد!', 'success');
+                currentIndex = 0;
+                selectedPropositions = {};
+                deletedArticles = {};
+                articles.forEach((_, idx) => {
+                    selectedPropositions[idx] = [];
+                });
+                displayArticle();
+                document.activeElement.blur();
+                document.getElementById('nextBtn').focus();
+                document.getElementById('saveProgressBtn').style.display = 'inline-block';
+            };
+            reader.readAsText(file);
+        });
+        document.getElementById('darkModeToggle').addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
+            // تغییر متن دکمه بر اساس وضعیت جدید
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            this.textContent = isDarkMode ? this.dataset.light : this.dataset.dark;
+    
+             // ذخیره وضعیت در localStorage
+            localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
+            });
+        // بررسی وضعیت قبلی و اعمال Dark Mode در صورت فعال بودن
+        window.onload = function() {
+            document.getElementById('prevBtn').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('saveBtn').style.display = 'none';
+            if (localStorage.getItem('darkMode') === 'enabled') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('darkModeToggle').textContent = '☀️ حالت روز';
+        }
+        };
+        function toggleDeleteArticle() {
+            deletedArticles[currentIndex] = document.getElementById("deleteArticle").checked;
+
+            if (deletedArticles[currentIndex]) {
+                selectedPropositions[currentIndex] = []; // حذف گزاره‌ها
+            } else {
+                selectedPropositions[currentIndex] = [...(articles[currentIndex].propositions || [])];
+            }
+
+            displayArticle(); // بروزرسانی صفحه
+        }
+
+        function displayArticle() {
+            if (articles.length === 0) return;
+            const articleContainer = document.getElementById('articleDisplay');
+            const articleCounter = document.getElementById('articleCounter');
+            const article = articles[currentIndex];
+            articleCounter.innerText = `ماده ${currentIndex + 1} از ${articles.length}`;
+            
+            if (typeof deletedArticles[currentIndex] === 'undefined') {
+                deletedArticles[currentIndex] = false;
+            }
+
+            articleContainer.innerHTML = '';
+
+            // Delete Article Section
+            const deleteSection = document.createElement("div");
+            deleteSection.className = "delete-article";
+            const deleteCheckbox = document.createElement("input");
+            deleteCheckbox.type = "checkbox";
+            deleteCheckbox.id = "deleteArticle";
+            deleteCheckbox.checked = deletedArticles[currentIndex];
+            deleteCheckbox.onchange = function() {
+                deletedArticles[currentIndex] = this.checked;
+                displayArticle();
+            };
+            const deleteLabel = document.createElement("label");
+            deleteLabel.htmlFor = "deleteArticle";
+            deleteLabel.textContent = "حذف این ماده";
+            deleteSection.appendChild(deleteCheckbox);
+            deleteSection.appendChild(deleteLabel);
+            articleContainer.appendChild(deleteSection);
+
+            // Article Title
+            if (article.qanon_title) {
+                const titleElement = document.createElement("h3");
+                titleElement.textContent = article.qanon_title;
+                articleContainer.appendChild(titleElement);
+            }
+
+            // Article Content Section
+            const contentSection = document.createElement("div");
+            contentSection.className = "article-content";
+
+            // Display content
+            if (article.content) {
+                const persianContent = document.createElement("div");
+                persianContent.textContent = Array.isArray(article.content) ? article.content.join(' ') : article.content;
+                contentSection.appendChild(persianContent);
+            }
+
+            articleContainer.appendChild(contentSection);
+
+            // Propositions Section
+            if (Array.isArray(article.propositions)) {
+                const propositionsSection = document.createElement("div");
+                propositionsSection.className = "propositions-section";
+
+                article.propositions.forEach((prop, propIdx) => {
+                    const propCard = document.createElement('div');
+                    propCard.className = 'proposition-card';
+                    propCard.draggable = true;
+                    propCard.dataset.index = propIdx;
+
+                    // Add drag handle
+                    const dragHandle = document.createElement('div');
+                    dragHandle.className = 'drag-handle';
+                    dragHandle.innerHTML = '⋮⋮';
+                    propCard.appendChild(dragHandle);
+
+                    // Proposition Header
+                    const propHeader = document.createElement('div');
+                    propHeader.className = 'proposition-header';
+                    
+                    const propCheckbox = document.createElement('input');
+                    propCheckbox.type = 'checkbox';
+                    propCheckbox.checked = (selectedPropositions[currentIndex]||[]).includes(propIdx);
+                    propCheckbox.onchange = function() {
+                        if (this.checked) {
+                            if (!selectedPropositions[currentIndex].includes(propIdx))
+                                selectedPropositions[currentIndex].push(propIdx);
+                        } else {
+                            selectedPropositions[currentIndex] = selectedPropositions[currentIndex].filter(i => i !== propIdx);
+                        }
+                        shouldScroll = false;
+                        displayArticle();
+                    };
+
+                    const propContent = document.createElement('span');
+                    propContent.className = 'proposition-content';
+                    propContent.textContent = prop.content;
+
+                    const editButton = document.createElement('button');
+                    editButton.className = 'edit-button';
+                    editButton.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>';
+                    editButton.onclick = function() {
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'edit-input';
+                        input.value = prop.content;
+                        
+                        const saveButton = document.createElement('button');
+                        saveButton.className = 'save-edit';
+                        saveButton.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> ذخیره';
+                        saveButton.onclick = function() {
+                            prop.content = input.value;
+                            shouldScroll = false;
+                            displayArticle();
+                        };
+
+                        const cancelButton = document.createElement('button');
+                        cancelButton.className = 'cancel-edit';
+                        cancelButton.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> انصراف';
+                        cancelButton.onclick = function() {
+                            shouldScroll = false;
+                            displayArticle();
+                        };
+
+                        // Add keyboard event listeners
+                        input.addEventListener('keydown', function(event) {
+                            if (event.key === 'Enter') {
+                                event.preventDefault();
+                                saveButton.click();
+                            } else if (event.key === 'Escape') {
+                                event.preventDefault();
+                                cancelButton.click();
+                            }
+                        });
+
+                        const editActions = document.createElement('div');
+                        editActions.className = 'edit-actions';
+                        editActions.appendChild(saveButton);
+                        editActions.appendChild(cancelButton);
+
+                        propHeader.innerHTML = '';
+                        propHeader.appendChild(propCheckbox);
+                        propHeader.appendChild(input);
+                        propHeader.appendChild(editActions);
+                        
+                        // Focus the input field
+                        input.focus();
+                    };
+
+                    propHeader.appendChild(propCheckbox);
+                    propHeader.appendChild(propContent);
+                    propHeader.appendChild(editButton);
+                    propCard.appendChild(propHeader);
+
+                    // Main Type Section
+                    if (prop.main_type) {
+                        const typeSection = document.createElement('div');
+                        typeSection.className = 'type-section';
+
+                        const typeTitle = document.createElement('div');
+                        typeTitle.className = 'type-title';
+                        typeTitle.textContent = 'نوع اصلی:';
+                        typeSection.appendChild(typeTitle);
+
+                        const typeItem = document.createElement('div');
+                        typeItem.className = 'type-item';
+
+                        const typeContent = document.createElement('span');
+                        typeContent.textContent = prop.main_type;
+
+                        const editTypeButton = document.createElement('button');
+                        editTypeButton.className = 'edit-button';
+                        editTypeButton.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>';
+                        editTypeButton.onclick = function() {
+                            const input = document.createElement('input');
+                            input.type = 'text';
+                            input.className = 'edit-input';
+                            input.value = prop.main_type;
+                            
+                            const saveButton = document.createElement('button');
+                            saveButton.className = 'save-edit';
+                            saveButton.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> ذخیره';
+                            saveButton.onclick = function() {
+                                prop.main_type = input.value;
+                                shouldScroll = false;
+                                displayArticle();
+                            };
+
+                            const cancelButton = document.createElement('button');
+                            cancelButton.className = 'cancel-edit';
+                            cancelButton.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> انصراف';
+                            cancelButton.onclick = function() {
+                                shouldScroll = false;
+                                displayArticle();
+                            };
+
+                            // Add keyboard event listeners
+                            input.addEventListener('keydown', function(event) {
+                                if (event.key === 'Enter') {
+                                    event.preventDefault();
+                                    saveButton.click();
+                                } else if (event.key === 'Escape') {
+                                    event.preventDefault();
+                                    cancelButton.click();
+                                }
+                            });
+
+                            const editActions = document.createElement('div');
+                            editActions.className = 'edit-actions';
+                            editActions.appendChild(saveButton);
+                            editActions.appendChild(cancelButton);
+
+                            typeItem.innerHTML = '';
+                            typeItem.appendChild(input);
+                            typeItem.appendChild(editActions);
+                            
+                            // Focus the input field
+                            input.focus();
+                        };
+
+                        typeItem.appendChild(typeContent);
+                        typeItem.appendChild(editTypeButton);
+                        typeSection.appendChild(typeItem);
+
+                        propCard.appendChild(typeSection);
+                    }
+
+                    // Add drag and drop event listeners
+                    propCard.addEventListener('dragstart', handleDragStart);
+                    propCard.addEventListener('dragend', handleDragEnd);
+                    propCard.addEventListener('dragover', handleDragOver);
+                    propCard.addEventListener('drop', handleDrop);
+
+                    propositionsSection.appendChild(propCard);
+                });
+
+                articleContainer.appendChild(propositionsSection);
+            }
+
+            // Update button visibility
+            document.getElementById('jsonFile').style.display = currentIndex === 0 ? 'block' : 'none';
+            document.getElementById('prevBtn').style.display = currentIndex > 0 ? 'inline-block' : 'none';
+            document.getElementById('nextBtn').style.display = currentIndex < articles.length - 1 ? 'inline-block' : 'none';
+            document.getElementById('saveBtn').style.display = currentIndex === articles.length - 1 ? 'inline-block' : 'none';
+            document.getElementById('saveProgressBtn').style.display = articles.length > 0 ? 'inline-block' : 'none';
+
+            if (shouldScroll) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+        
+        function addProposition() {
+            const newPropositionInput = document.getElementById('newProposition');
+            const newMainTypeInput = document.getElementById('newMainType');
+            const newContent = newPropositionInput.value.trim();
+            const newMainType = newMainTypeInput.value.trim();
+            if (newContent === '') return;
+            // Add new proposition to current article
+            if (!articles[currentIndex].propositions) articles[currentIndex].propositions = [];
+            const newId = (articles[currentIndex].propositions.length + 1).toString();
+            articles[currentIndex].propositions.push({
+                id: newId,
+                content: newContent,
+                main_type: newMainType
+            });
+            // Update selectedPropositions
+            if (!selectedPropositions[currentIndex]) selectedPropositions[currentIndex] = [];
+            selectedPropositions[currentIndex].push(articles[currentIndex].propositions.length - 1);
+            shouldScroll = false;
+            displayArticle();
+            newPropositionInput.value = '';
+            newMainTypeInput.value = '';
+            newPropositionInput.blur();
+            const nextBtn = document.getElementById('nextBtn');
+            if (nextBtn && nextBtn.style.display !== 'none') {
+                nextBtn.focus();
+            }
+        }
+
+        function nextArticle() {
+            if (currentIndex < articles.length - 1) {
+                currentIndex++;
+                shouldScroll = true; // ✅ هنگام تغییر ماده، اسکرول کند
+                displayArticle();
+            }
+        }
+
+        function prevArticle() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                shouldScroll = true; // ✅ هنگام تغییر ماده، اسکرول کند
+                displayArticle();
+            }
+        }
+
+        function saveProgress() {
+            const progressData = {
+                __progress_save__: true,
+                articles,
+                articleKeys,
+                currentIndex,
+                selectedPropositions,
+                deletedArticles,
+                uploadedFileName
+            };
+            let baseName = uploadedFileName.replace(/(_progress)?(_corrected)?\.json$/i, '').replace(/\.json$/i, '');
+            let outputFileName = baseName + '_progress.json';
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(progressData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", outputFileName);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            document.body.removeChild(downloadAnchor);
+            showToast('موفقیت', 'پیشرفت شما ذخیره شد!', 'success');
+        }
+
+        function downloadData() {
+            let output = {};
+            for (let i = 0; i < articles.length; i++) {
+                if (deletedArticles[i]) continue;
+                let article = articles[i];
+                let outProps = [];
+                if (Array.isArray(article.propositions)) {
+                    article.propositions.forEach((prop, propIdx) => {
+                        if ((selectedPropositions[i]||[]).includes(propIdx)) {
+                            outProps.push({
+                                id: prop.id,
+                                content: prop.content,
+                                main_type: prop.main_type
+                            });
+                        }
+                    });
+                }
+                if (outProps.length > 0) {
+                    output[article.id] = {
+                        qanon_title: article.qanon_title,
+                        content: article.content,
+                        propositions: outProps
+                    };
+                }
+            }
+            if (Object.keys(output).length === 0) {
+                showToast('هشدار', 'تمام مواد حذف شده‌اند یا هیچ گزاره‌ای انتخاب نشده است!', 'warning');
+                return;
+            }
+            let baseName = uploadedFileName.replace(/(_progress)?(_corrected)?\.json$/i, '').replace(/\.json$/i, '');
+            let outputFileName = baseName + '_corrected.json';
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(output, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", outputFileName);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            document.body.removeChild(downloadAnchor);
+            showToast('موفقیت', 'فایل با موفقیت ذخیره شد!', 'success');
+        }
+
+        document.getElementById('newProposition').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                addProposition();
+                event.preventDefault();
+            }
+        });
+
+        document.addEventListener('keydown', function(event) {
+            const activeElement = document.activeElement;
+            const isTyping = activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA';
+
+            if (isTyping) return; // اگر در حال نوشتن بود، هیچ کاری نکن
+
+            if (event.key === 'ArrowRight') {
+                nextArticle();
+            } else if (event.key === 'ArrowLeft') {
+                prevArticle();
+            }
+        });
+
+        // Drag and Drop Functions
+        let draggedItem = null;
+
+        function handleDragStart(e) {
+            draggedItem = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.index);
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            draggedItem = null;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            if (draggedItem === this) return;
+
+            const fromIndex = parseInt(draggedItem.dataset.index);
+            const toIndex = parseInt(this.dataset.index);
+
+            // Reorder the propositions array
+            const article = articles[currentIndex];
+            const [movedProp] = article.propositions.splice(fromIndex, 1);
+            article.propositions.splice(toIndex, 0, movedProp);
+
+            // Update selected propositions to match new order
+            const newSelectedProps = [];
+            selectedPropositions[currentIndex].forEach(oldIndex => {
+                if (oldIndex === fromIndex) {
+                    newSelectedProps.push(toIndex);
+                } else if (oldIndex < fromIndex && oldIndex >= toIndex) {
+                    newSelectedProps.push(oldIndex + 1);
+                } else if (oldIndex > fromIndex && oldIndex <= toIndex) {
+                    newSelectedProps.push(oldIndex - 1);
+                } else {
+                    newSelectedProps.push(oldIndex);
+                }
+            });
+            selectedPropositions[currentIndex] = newSelectedProps;
+
+            displayArticle();
+            return false;
+        }
+
+    </script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("/service-worker.js")
+                .then(() => console.log("✅ Service Worker ثبت شد و سایت آماده نصب است!"))
+                .catch((error) => console.log("❌ خطا در ثبت Service Worker:", error));
+        }
+    </script>
+</body>
+</html>
