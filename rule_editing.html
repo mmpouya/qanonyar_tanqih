@@ -668,23 +668,23 @@
 
             articleContainer.innerHTML = '';
 
-            // Delete Article Section
-            const deleteSection = document.createElement("div");
-            deleteSection.className = "delete-article";
-            const deleteCheckbox = document.createElement("input");
-            deleteCheckbox.type = "checkbox";
-            deleteCheckbox.id = "deleteArticle";
-            deleteCheckbox.checked = deletedArticles[currentIndex];
-            deleteCheckbox.onchange = function() {
-                deletedArticles[currentIndex] = this.checked;
-                displayArticle();
-            };
-            const deleteLabel = document.createElement("label");
-            deleteLabel.htmlFor = "deleteArticle";
-            deleteLabel.textContent = "حذف این ماده";
-            deleteSection.appendChild(deleteCheckbox);
-            deleteSection.appendChild(deleteLabel);
-            articleContainer.appendChild(deleteSection);
+            // // Delete Article Section
+            // const deleteSection = document.createElement("div");
+            // deleteSection.className = "delete-article";
+            // const deleteCheckbox = document.createElement("input");
+            // deleteCheckbox.type = "checkbox";
+            // deleteCheckbox.id = "deleteArticle";
+            // deleteCheckbox.checked = deletedArticles[currentIndex];
+            // deleteCheckbox.onchange = function() {
+            //     deletedArticles[currentIndex] = this.checked;
+            //     displayArticle();
+            // };
+            // const deleteLabel = document.createElement("label");
+            // deleteLabel.htmlFor = "deleteArticle";
+            // deleteLabel.textContent = "حذف این ماده";
+            // deleteSection.appendChild(deleteCheckbox);
+            // deleteSection.appendChild(deleteLabel);
+            // articleContainer.appendChild(deleteSection);
 
             // Article Title
             if (article.qanon_title) {
